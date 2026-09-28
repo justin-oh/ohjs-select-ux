@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Select UX</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="mb-3">
+        <label for="selection" class="form-label">Selection</label>
+        <select name="selection" id="selection" class="form-select" required multiple>
+          <option value="one">One</option>
+          <option value="two">Two</option>
+          <option value="three" selected>Three</option>
+          <optgroup label="Four">
+            <option value="four_a">Four A</option>
+            <option value="four_b">Four B</option>
+          </optgroup>
+          <option value="five">Five</option>
+          <option value="volvo">Six</option>
+          <option value="seven">Seven</option>
+          <optgroup label="Eight">
+            <option value="eight_a">Eight A</option>
+            <option value="eight_b">Eight B</option>
+            <option value="eight_c">Eight C</option>
+            <option value="eight_d">Eight D</option>
+            <option value="eight_e">Eight E</option>
+            <option value="eight_f">Eight F</option>
+            <option value="eight_g">Eight G</option>
+            <option value="eight_h">Eight H</option>
+            <option value="eight_i">Eight I</option>
+            <option value="eight_j">Eight J</option>
+            <option value="eight_k">Eight K</option>
+            <option value="eight_l">Eight L</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+
+    <style>
+      .select-ux {
+        .select-ux__selections {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+          align-items: center;
+        }
+
+        .select-ux__inputs {
+          max-height: 10rem;
+          overflow-y: scroll;
+          border: var(--bs-border-width) solid var(--bs-border-color);
+          border-radius: var(--bs-border-radius);
+          padding: .375rem .75rem;
+        }
+
+        .select-ux__group-wrapper {
+          .select-ux__group-heading {
+            font-weight: bold;
+          }
+
+          .select-ux__input-wrapper {
+            margin-left: 1rem;
+          }
+        }
+      }
+    </style>
+
+    <script>
+    function selectUX(select) {
+      if (!(select instanceof HTMLSelectElement)) {
+        console.error('You must provide a <select> element.');
+
+        return;
+      }
+
+      if (!select.id || !select.name) {
+        console.error('The <select> element must have an ID and NAME.');
+
+        return;
+      }
+
+      const container = document.createElement('div');
+      container.id = select.id;
+      container.className = 'select-ux';
+
+      const search = document.createElement('input');
+      search.type = 'search';
+      search.placeholder = 'Search options...';
+      search.className = 'select-ux__search form-control mb-2';
+
+      container.appendChild(search);
+
+      const selections = document.createElement('div');
+      selections.className = 'select-ux__selections mb-2';
+
+      container.appendChild(selections);
+
+      const inputContainer = document.createElement('div');
+      inputContainer.className = 'select-ux__inputs';
+
+      container.appendChild(inputContainer);
+
+      function onInputChange() {
+        selections.innerHTML = '<small><strong>Selected:</strong></small>';
+
+        let anyChecked = false;
+
+        inputs.forEach(function(input) {
+          if (input.checked) {
+            anyChecked = true;
+
+            const selection = document.createElement('button');
+            selection.type = 'button';
+            selection.className = 'select-ux__selection badge text-bg-secondary';
+            selection.textContent = input.labels[0].textContent;
+
+            selection.addEventListener('click', function(e) {
+              input.checked = false;
+              onInputChange();
+            });
+
+            selections.appendChild(selection);
+          }
+        });
+
+        if (!anyChecked) {
+          selections.innerHTML += '<small><em>None</em></small>';
+        }
+      }
+
+      let optionCount = 0;
+
+      const inputs = [];
+      const groups = [];
+
+      function optionToInput(option, parent) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'select-ux__input-wrapper form-check';
+
+        const input = document.createElement('input');
+        input.id = select.id + '_' + optionCount++;
+        input.value = option.value;
+        input.name = select.name;
+        input.checked = option.selected;
+        input.className = 'select-ux__input form-check-input';
+
+        if (select.multiple) {
+          input.type = 'checkbox';
+          input.name += '[]';
+        } else {
+          input.type = 'radio';
+          input.required = select.required;
+        }
+
+        input.addEventListener('change', onInputChange);
+
+        inputs.push(input);
+
+        const label = document.createElement('label');
+        label.textContent = option.textContent;
+        label.className = 'select-ux__input-label form-check-label';
+        label.setAttribute('for', input.id);
+
+        wrapper.appendChild(input);
+        wrapper.appendChild(label);
+
+        parent.appendChild(wrapper);
+      }
+
+      function optgroupToInputs(optgroup) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'select-ux__group-wrapper';
+
+        groups.push(wrapper);
+
+        const heading = document.createElement('div');
+        heading.className = 'select-ux__group-heading';
+        heading.role = 'heading';
+        heading.textContent = optgroup.label;
+
+        wrapper.appendChild(heading);
+
+        for (let j = 0; j < optgroup.children.length; j++) {
+          const option = optgroup.children.item(j);
+
+          optionToInput(option, wrapper);
+        }
+
+        inputContainer.appendChild(wrapper);
+      }
+
+      for (let i = 0; i < select.children.length; i++) {
+        const child = select.children.item(i);
+
+        if ('OPTION' === child.tagName) {
+          optionToInput(child, inputContainer);
+        } else if ('OPTGROUP' === child.tagName) {
+          optgroupToInputs(child);
+        }
+      }
+
+      select.after(container);
+
+      select.remove();
+
+      onInputChange();
+    }
+
+    selectUX(document.getElementById('selection'));
+    </script>
+  </body>
+</html>
