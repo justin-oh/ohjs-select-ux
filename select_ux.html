@@ -7,35 +7,40 @@
   </head>
   <body>
     <div class="container">
-      <div class="mb-3">
-        <label for="selection" class="form-label">Selection</label>
-        <select name="selection" id="selection" class="form-select" required multiple>
-          <option value="one">One</option>
-          <option value="two">Two</option>
-          <option value="three" selected>Three</option>
-          <optgroup label="Four">
-            <option value="four_a">Four A</option>
-            <option value="four_b">Four B</option>
-          </optgroup>
-          <option value="five">Five</option>
-          <option value="volvo">Six</option>
-          <option value="seven">Seven</option>
-          <optgroup label="Eight">
-            <option value="eight_a">Eight A</option>
-            <option value="eight_b">Eight B</option>
-            <option value="eight_c">Eight C</option>
-            <option value="eight_d">Eight D</option>
-            <option value="eight_e">Eight E</option>
-            <option value="eight_f">Eight F</option>
-            <option value="eight_g">Eight G</option>
-            <option value="eight_h">Eight H</option>
-            <option value="eight_i">Eight I</option>
-            <option value="eight_j">Eight J</option>
-            <option value="eight_k">Eight K</option>
-            <option value="eight_l">Eight L</option>
-          </optgroup>
-        </select>
-      </div>
+        <form>
+          <div class="mb-3">
+            <label for="selection" class="form-label">Selection</label>
+            <select name="selection" id="selection" class="form-select" required>
+              <option value="one">One</option>
+              <option value="two">Two</option>
+              <option value="three" selected>Three</option>
+              <optgroup label="Four">
+                <option value="four_a">Four A</option>
+                <option value="four_b">Four B</option>
+              </optgroup>
+              <option value="five">Five</option>
+              <option value="volvo">Six</option>
+              <option value="seven">Seven</option>
+              <optgroup label="Eight">
+                <option value="eight_a">Eight A</option>
+                <option value="eight_b">Eight B</option>
+                <option value="eight_c">Eight C</option>
+                <option value="eight_d">Eight D</option>
+                <option value="eight_e">Eight E</option>
+                <option value="eight_f">Eight F</option>
+                <option value="eight_g">Eight G</option>
+                <option value="eight_h">Eight H</option>
+                <option value="eight_i">Eight I</option>
+                <option value="eight_j">Eight J</option>
+                <option value="eight_k">Eight K</option>
+                <option value="eight_l">Eight L</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
+      </form>
     </div>
 
     <style>
@@ -68,186 +73,320 @@
     </style>
 
     <script>
-    function selectUX(select) {
-      if (!(select instanceof HTMLSelectElement)) {
-        console.error('You must provide a <select> element.');
+      class SelectUX
+      {
+        #el;
+        #search;
+        #selections;
+        #inputs;
 
-        return;
-      }
+        constructor(select, headingLevel = 4) {
+          if (!(select instanceof HTMLSelectElement)) {
+            throw new Error('You must provide a <select> element.');
+          }
 
-      if (!select.id || !select.name) {
-        console.error('The <select> element must have an ID and NAME.');
+          if (!select.id || !select.name) {
+            throw new Error('The <select> element must have ID and NAME attributes.');
+          }
 
-        return;
-      }
+          this.#el = document.createElement('div');
+          this.#el.id = select.id;
+          this.#el.className = 'select-ux';
 
-      const container = document.createElement('div');
-      container.id = select.id;
-      container.className = 'select-ux';
+          this.#search = document.createElement('input');
+          this.#search.type = 'search';
+          this.#search.placeholder = 'Search options...';
+          this.#search.className = 'select-ux__search form-control mb-2';
 
-      const search = document.createElement('input');
-      search.type = 'search';
-      search.placeholder = 'Search options...';
-      search.className = 'select-ux__search form-control mb-2';
-
-      function onSearchChange() {
-        const value = search.value.toLowerCase();
-
-        let anyVisible = false;
-
-        inputs.forEach(function(input) {
-          const match = input.labels[0].textContent.toLowerCase().includes(value);
-
-          anyVisible |= match;
-
-          input.parentNode.style.display = match ? '' : 'none';
-        });
-
-        groups.forEach(function(group) {
-          let anyGroupInputVisible = false;
-
-          group.querySelectorAll('.select-ux__input-wrapper').forEach(function(div) {
-            anyGroupInputVisible |= div.style.display !== 'none';
+          this.#search.addEventListener('input', () => {
+            this.#onSearchChange();
           });
 
-          group.style.display = anyGroupInputVisible ? '' : 'none';
+          this.#search.addEventListener('change', () => {
+            this.#onSearchChange();
+          });
 
-          anyVisible |= anyGroupInputVisible;
-        });
+          this.#el.appendChild(this.#search);
 
-        inputContainerEmpty.style.display = anyVisible ? 'none' : '';
-      }
+          this.#selections = document.createElement('div');
+          this.#selections.className = 'select-ux__selections mb-2';
 
-      search.addEventListener('input', onSearchChange);
-      search.addEventListener('change', onSearchChange);
+          this.#el.appendChild(this.#selections);
 
-      container.appendChild(search);
+          document.addEventListener('select-ux:input:change', () => {
+            this.#onInputChange();
+          });
 
-      const selections = document.createElement('div');
-      selections.className = 'select-ux__selections mb-2';
+          this.#inputs = new SelectUXInputs(select, headingLevel);
 
-      container.appendChild(selections);
+          this.#el.appendChild(this.#inputs.getEl());
 
-      const inputContainer = document.createElement('div');
-      inputContainer.className = 'select-ux__inputs';
+          select.after(this.#el);
 
-      const inputContainerEmpty = document.createElement('div');
-      inputContainerEmpty.className = 'select-ux__inputs__empty';
-      inputContainerEmpty.textContent = 'No options found.';
-      inputContainerEmpty.style.display = 'none';
+          //select.remove();
 
-      inputContainer.appendChild(inputContainerEmpty);
+          this.#onInputChange();
+          this.#onSearchChange();
+        }
 
-      container.appendChild(inputContainer);
+        #onSearchChange() {
+          const value = this.#search.value.toLowerCase();
 
-      function onInputChange() {
-        selections.innerHTML = '<small><strong>Selected:</strong></small>';
+          this.#inputs.filter(value);
+        }
 
-        let anyChecked = false;
+        #onInputChange() {
+          this.#selections.innerHTML = '<small><strong>Selected:</strong></small>';
 
-        inputs.forEach(function(input) {
-          if (input.checked) {
-            anyChecked = true;
+          const checked = this.#inputs.getChecked();
 
-            const selection = document.createElement('button');
-            selection.type = 'button';
-            selection.className = 'select-ux__selection badge text-bg-secondary';
-            selection.textContent = input.labels[0].textContent;
+          checked.forEach((selectUXInput) => {
+            this.#addSelection(selectUXInput);
+          });
 
-            selection.addEventListener('click', function(e) {
-              input.checked = false;
-              onInputChange();
-            });
-
-            selections.appendChild(selection);
+          if (!checked.length) {
+            this.#selections.innerHTML += '<small><em>None</em></small>';
           }
-        });
+        }
 
-        if (!anyChecked) {
-          selections.innerHTML += '<small><em>None</em></small>';
+        #addSelection(selectUXInput) {
+          const selection = document.createElement('button');
+          selection.type = 'button';
+          selection.className = 'select-ux__selection btn badge text-bg-secondary';
+          selection.textContent = selectUXInput.getLabel().textContent;
+
+          selection.addEventListener('click', (e) => {
+            selectUXInput.setChecked(false);
+
+            this.#onInputChange();
+          });
+
+          this.#selections.appendChild(selection);
         }
       }
 
-      let optionCount = 0;
+      class SelectUXInputs
+      {
+        #el;
+        #empty;
+        #inputs = [];
+        #groups = [];
 
-      const inputs = [];
-      const groups = [];
+        constructor(select, headingLevel) {
+          this.#el = document.createElement('div');
+          this.#el.className = 'select-ux__inputs';
 
-      function optionToInput(option, parent) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'select-ux__input-wrapper form-check';
+          this.#empty = document.createElement('div');
+          this.#empty.className = 'select-ux__inputs__empty';
+          this.#empty.textContent = 'No options found.';
+          this.#empty.style.display = 'none';
 
-        const input = document.createElement('input');
-        input.id = select.id + '_' + optionCount++;
-        input.value = option.value;
-        input.name = select.name;
-        input.checked = option.selected;
-        input.className = 'select-ux__input form-check-input';
+          this.#el.appendChild(this.#empty);
 
-        if (select.multiple) {
-          input.type = 'checkbox';
-          input.name += '[]';
-        } else {
-          input.type = 'radio';
-          input.required = select.required;
+          for (let i = 0; i < select.children.length; i++) {
+            const child = select.children.item(i);
+
+            if ('OPTION' === child.tagName) {
+              const input = new SelectUXInput(child);
+
+              this.#el.appendChild(input.getEl());
+
+              this.#inputs.push(input);
+            } else if ('OPTGROUP' === child.tagName) {
+              const group = new SelectUXGroup(child, headingLevel);
+
+              this.#el.appendChild(group.getEl());
+
+              this.#groups.push(group);
+            }
+          }
         }
 
-        input.addEventListener('change', onInputChange);
-
-        inputs.push(input);
-
-        const label = document.createElement('label');
-        label.textContent = option.textContent;
-        label.className = 'select-ux__input-label form-check-label';
-        label.setAttribute('for', input.id);
-
-        wrapper.appendChild(input);
-        wrapper.appendChild(label);
-
-        parent.appendChild(wrapper);
-      }
-
-      function optgroupToInputs(optgroup) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'select-ux__group-wrapper';
-
-        groups.push(wrapper);
-
-        const heading = document.createElement('div');
-        heading.className = 'select-ux__group-heading';
-        heading.role = 'heading';
-        heading.textContent = optgroup.label;
-
-        wrapper.appendChild(heading);
-
-        for (let j = 0; j < optgroup.children.length; j++) {
-          const option = optgroup.children.item(j);
-
-          optionToInput(option, wrapper);
+        getEl() {
+          return this.#el;
         }
 
-        inputContainer.appendChild(wrapper);
-      }
+        filter(value) {
+          let anyVisible = false;
 
-      for (let i = 0; i < select.children.length; i++) {
-        const child = select.children.item(i);
+          this.#inputs.forEach(function(selectUXInput) {
+            anyVisible |= selectUXInput.filter(value);
+          });
 
-        if ('OPTION' === child.tagName) {
-          optionToInput(child, inputContainer);
-        } else if ('OPTGROUP' === child.tagName) {
-          optgroupToInputs(child);
+          this.#groups.forEach(function(selectUXGroup) {
+            anyVisible |= selectUXGroup.filter(value);
+          });
+
+          this.#empty.style.display = anyVisible ? 'none' : '';
+        }
+
+        getChecked() {
+          const checked = [];
+
+          this.#inputs.forEach(function(selectUXInput) {
+            if (selectUXInput.getChecked()) {
+              checked.push(selectUXInput);
+            }
+          });
+
+          this.#groups.forEach(function(selectUXGroup) {
+            selectUXGroup.getChecked().forEach(function(selectUXInput) {
+              checked.push(selectUXInput);
+            });
+          });
+
+          return checked;
         }
       }
 
-      select.after(container);
+      class SelectUXInput
+      {
+        #el;
+        #input;
+        #label;
 
-      select.remove();
+        static #count = 0;
 
-      onInputChange();
-      onSearchChange();
-    }
+        constructor(option) {
+          if (!(option instanceof HTMLOptionElement)) {
+            throw new Error('You must provide an <option> element.');
+          }
 
-    selectUX(document.getElementById('selection'));
+          const select = option.closest('select');
+
+          if (!(select instanceof HTMLSelectElement)) {
+            throw new Error('Could not find the parent <select> element.');
+          }
+
+          this.#el = document.createElement('div');
+          this.#el.className = 'select-ux__input-wrapper form-check';
+
+          this.#input = document.createElement('input');
+          this.#input.id = select.id + '_' + SelectUXInput.#count++;
+          this.#input.value = option.value;
+          this.#input.name = select.name;
+          this.#input.checked = option.selected;
+          this.#input.className = 'select-ux__input form-check-input';
+
+          if (select.multiple) {
+            this.#input.type = 'checkbox';
+            this.#input.name += '[]';
+          } else {
+            this.#input.type = 'radio';
+            this.#input.required = select.required;
+          }
+
+          this.#input.addEventListener('change', () => {
+            const event = new Event('select-ux:input:change');
+
+            document.dispatchEvent(event);
+          });
+
+          this.#label = document.createElement('label');
+          this.#label.textContent = option.textContent;
+          this.#label.className = 'select-ux__input-label form-check-label';
+          this.#label.setAttribute('for', this.#input.id);
+
+          this.#el.appendChild(this.#input);
+          this.#el.appendChild(this.#label);
+        }
+
+        getEl() {
+          return this.#el;
+        }
+
+        getLabel() {
+          return this.#label;
+        }
+
+        getChecked() {
+          return this.#input.checked;
+        }
+
+        setChecked(checked) {
+          this.#input.checked = checked;
+        }
+
+        filter(value) {
+          const show = this.#label.textContent.toLowerCase().includes(value);
+
+          this.#el.style.display = show ? '' : 'none';
+
+          return show;
+        }
+      }
+
+      class SelectUXGroup
+      {
+        #el;
+        #heading;
+        #inputs = [];
+
+        constructor(optgroup, headingLevel) {
+          if (!(optgroup instanceof HTMLOptGroupElement)) {
+            throw new Error('You must provide an <optgroup> element.');
+          }
+
+          const select = optgroup.closest('select');
+
+          if (!(select instanceof HTMLSelectElement)) {
+            throw new Error('Could not find the parent <select> element.');
+          }
+
+          this.#el = document.createElement('div');
+          this.#el.className = 'select-ux__group-wrapper';
+
+          this.#heading = document.createElement('div');
+          this.#heading.className = 'select-ux__group-heading';
+          this.#heading.role = 'heading';
+          this.#heading.ariaLevel = headingLevel;
+          this.#heading.textContent = optgroup.label;
+
+          this.#el.appendChild(this.#heading);
+
+          for (let i = 0; i < optgroup.children.length; i++) {
+            const option = optgroup.children.item(i);
+
+            const selectUXInput = new SelectUXInput(option);
+
+            this.#el.appendChild(selectUXInput.getEl());
+
+            this.#inputs.push(selectUXInput);
+          }
+        }
+
+        getEl() {
+          return this.#el;
+        }
+
+        getChecked() {
+          const checked = [];
+
+          this.#inputs.forEach(function(selectUXInput) {
+            if (selectUXInput.getChecked()) {
+              checked.push(selectUXInput);
+            }
+          });
+
+          return checked;
+        }
+
+        filter(value) {
+          let anyVisible = false;
+
+          this.#inputs.forEach(function(selectUXInput) {
+            anyVisible |= selectUXInput.filter(value);
+          });
+
+          this.#el.style.display = anyVisible ? '' : 'none';
+
+          return anyVisible;
+        }
+      }
+
+      const select = document.getElementById('selection');
+
+      const selectUX = new SelectUX(select);
     </script>
   </body>
 </html>
