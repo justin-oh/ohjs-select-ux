@@ -80,7 +80,7 @@
         #selections;
         #inputs;
 
-        constructor(select, headingLevel = 4) {
+        constructor(select, groupHeadingLevel = 4) {
           if (!(select instanceof HTMLSelectElement)) {
             throw new Error('You must provide a <select> element.');
           }
@@ -117,7 +117,7 @@
             this.#onInputChange();
           });
 
-          this.#inputs = new SelectUXInputs(select, headingLevel);
+          this.#inputs = new SelectUXInputs(select, groupHeadingLevel);
 
           this.#el.appendChild(this.#inputs.getEl());
 
@@ -172,7 +172,7 @@
         #inputs = [];
         #groups = [];
 
-        constructor(select, headingLevel) {
+        constructor(select, groupHeadingLevel) {
           this.#el = document.createElement('div');
           this.#el.className = 'select-ux__inputs';
 
@@ -193,7 +193,7 @@
 
               this.#inputs.push(input);
             } else if ('OPTGROUP' === child.tagName) {
-              const group = new SelectUXGroup(child, headingLevel);
+              const group = new SelectUXGroup(child, groupHeadingLevel);
 
               this.#el.appendChild(group.getEl());
 
