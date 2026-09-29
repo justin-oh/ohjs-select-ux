@@ -60,7 +60,7 @@
           padding: .375rem .75rem;
         }
 
-        .select-ux__group-wrapper {
+        .select-ux__group {
           .select-ux__group-heading {
             font-weight: bold;
           }
@@ -75,6 +75,8 @@
     <script>
       class SelectUX
       {
+        static className = 'select-ux';
+
         #el;
         #search;
         #selections;
@@ -83,6 +85,7 @@
         constructor({
           select,
           groupHeadingLevel = 4,
+          searchPlaceholder = 'Search options...',
         }) {
           if (!(select instanceof HTMLSelectElement)) {
             throw new Error('You must provide a <select> element.');
@@ -94,31 +97,17 @@
 
           this.#el = document.createElement('div');
           this.#el.id = select.id;
-          this.#el.className = 'select-ux';
+          this.#el.className = SelectUX.className;
 
-          this.#search = document.createElement('input');
-          this.#search.type = 'search';
-          this.#search.placeholder = 'Search options...';
-          this.#search.className = 'select-ux__search form-control mb-2';
-
-          this.#search.addEventListener('input', () => {
-            this.#onSearchChange();
+          this.#search = new SelectUXSearch({
+            placeholder: searchPlaceholder,
           });
 
-          this.#search.addEventListener('change', () => {
-            this.#onSearchChange();
-          });
+          this.#el.appendChild(this.#search.getEl());
 
-          this.#el.appendChild(this.#search);
+          this.#selections = new SelectUXSelections();
 
-          this.#selections = document.createElement('div');
-          this.#selections.className = 'select-ux__selections mb-2';
-
-          this.#el.appendChild(this.#selections);
-
-          document.addEventListener('select-ux:input:change', () => {
-            this.#onInputChange();
-          });
+          this.#el.appendChild(this.#selections.getEl());
 
           this.#inputs = new SelectUXInputs({
             select: select,
@@ -131,50 +120,118 @@
 
           //select.remove();
 
+          document.addEventListener('select-ux:change', () => {
+            this.#onInputChange();
+          });
+
+          document.addEventListener('select-ux:search', () => {
+            this.#onSearchChange();
+          });
+
           this.#onInputChange();
           this.#onSearchChange();
         }
 
         #onSearchChange() {
-          const value = this.#search.value.toLowerCase();
+          const value = this.#search.getValue().toLowerCase();
 
           this.#inputs.filter(value);
         }
 
         #onInputChange() {
-          this.#selections.innerHTML = '<small><strong>Selected:</strong></small>';
-
           const checked = this.#inputs.getChecked();
 
-          checked.forEach((selectUXInput) => {
+          this.#selections.render(checked);
+        }
+      }
+
+      class SelectUXSearch
+      {
+        static className = 'select-ux__search';
+
+        #el;
+
+        static #dispatch() {
+          const event = new Event('select-ux:search');
+
+          document.dispatchEvent(event);
+        }
+
+        constructor({
+          placeholder,
+        }) {
+          this.#el = document.createElement('input');
+          this.#el.type = 'search';
+          this.#el.className = SelectUXSearch.className;
+          this.#el.placeholder = placeholder;
+
+          this.#el.addEventListener('input', () => {
+            SelectUXSearch.#dispatch();
+          });
+
+          this.#el.addEventListener('change', () => {
+            SelectUXSearch.#dispatch();
+          });
+        }
+
+        getEl() {
+          return this.#el;
+        }
+
+        getValue() {
+          return this.#el.value;
+        }
+      }
+
+      class SelectUXSelections
+      {
+        static className = 'select-ux__selections';
+        static selectionClassName = 'select-ux__selection';
+
+        #el;
+
+        constructor() {
+          this.#el = document.createElement('div');
+          this.#el.className = SelectUXSelections.className;
+        }
+
+        getEl() {
+          return this.#el;
+        }
+
+        render(selectUXInputs) {
+          this.#el.innerHTML = '<small><strong>Selected:</strong></small>';
+
+          selectUXInputs.forEach((selectUXInput) => {
             this.#addSelection(selectUXInput);
           });
 
-          if (!checked.length) {
-            this.#selections.innerHTML += '<small><em>None</em></small>';
+          if (!selectUXInputs.length) {
+            this.#el.innerHTML += '<small><em>None</em></small>';
           }
         }
 
         #addSelection(selectUXInput) {
           const selection = document.createElement('button');
           selection.type = 'button';
-          selection.className = 'select-ux__selection btn badge text-bg-secondary';
+          selection.className = SelectUXSelections.selectionClassName;
           selection.textContent = selectUXInput.getLabel().textContent;
 
           selection.addEventListener('click', (e) => {
             selectUXInput.setChecked(false);
-
-            this.#onInputChange();
           });
 
-          this.#selections.appendChild(selection);
+          this.#el.appendChild(selection);
         }
       }
 
       class SelectUXInputs
       {
+        static className = 'select-ux__inputs';
+        static emptyMessageClassName = 'select-ux__inputs__empty';
+
         #el;
-        #empty;
+        #emptyMessage;
         #inputs = [];
         #groups = [];
 
@@ -183,14 +240,14 @@
           groupHeadingLevel,
         }) {
           this.#el = document.createElement('div');
-          this.#el.className = 'select-ux__inputs';
+          this.#el.className = SelectUXInputs.className;
 
-          this.#empty = document.createElement('div');
-          this.#empty.className = 'select-ux__inputs__empty';
-          this.#empty.textContent = 'No options found.';
-          this.#empty.style.display = 'none';
+          this.#emptyMessage = document.createElement('div');
+          this.#emptyMessage.className = SelectUXInputs.emptyMessageClassName;
+          this.#emptyMessage.textContent = 'No options found.';
+          this.#emptyMessage.style.display = 'none';
 
-          this.#el.appendChild(this.#empty);
+          this.#el.appendChild(this.#emptyMessage);
 
           for (let i = 0; i < select.children.length; i++) {
             const child = select.children.item(i);
@@ -231,7 +288,7 @@
             anyVisible |= selectUXGroup.filter(value);
           });
 
-          this.#empty.style.display = anyVisible ? 'none' : '';
+          this.#emptyMessage.style.display = anyVisible ? 'none' : '';
         }
 
         getChecked() {
@@ -255,11 +312,21 @@
 
       class SelectUXInput
       {
+        static className = 'select-ux__input-wrapper';
+        static inputClassName = 'select-ux__input';
+        static labelClassName = 'select-ux__input-label';
+
         #el;
         #input;
         #label;
 
         static #count = 0;
+
+        static #dispatch() {
+          const event = new Event('select-ux:change');
+
+          document.dispatchEvent(event);
+        }
 
         constructor({
           option,
@@ -275,14 +342,14 @@
           }
 
           this.#el = document.createElement('div');
-          this.#el.className = 'select-ux__input-wrapper form-check';
+          this.#el.className = SelectUXInput.className;
 
           this.#input = document.createElement('input');
           this.#input.id = select.id + '_' + SelectUXInput.#count++;
           this.#input.value = option.value;
           this.#input.name = select.name;
           this.#input.checked = option.selected;
-          this.#input.className = 'select-ux__input form-check-input';
+          this.#input.className = SelectUXInput.inputClassName;
 
           if (select.multiple) {
             this.#input.type = 'checkbox';
@@ -293,14 +360,12 @@
           }
 
           this.#input.addEventListener('change', () => {
-            const event = new Event('select-ux:input:change');
-
-            document.dispatchEvent(event);
+            SelectUXInput.#dispatch();
           });
 
           this.#label = document.createElement('label');
           this.#label.textContent = option.textContent;
-          this.#label.className = 'select-ux__input-label form-check-label';
+          this.#label.className = SelectUXInput.labelClassName;
           this.#label.setAttribute('for', this.#input.id);
 
           this.#el.appendChild(this.#input);
@@ -321,6 +386,8 @@
 
         setChecked(checked) {
           this.#input.checked = checked;
+
+          SelectUXInput.#dispatch();
         }
 
         filter(value) {
@@ -334,6 +401,9 @@
 
       class SelectUXGroup
       {
+        static className = 'select-ux__group';
+        static headingClassName = 'select-ux__group-heading';
+
         #el;
         #heading;
         #inputs = [];
@@ -353,10 +423,10 @@
           }
 
           this.#el = document.createElement('div');
-          this.#el.className = 'select-ux__group-wrapper';
+          this.#el.className = SelectUXGroup.className;
 
           this.#heading = document.createElement('div');
-          this.#heading.className = 'select-ux__group-heading';
+          this.#heading.className = SelectUXGroup.headingClassName;
           this.#heading.role = 'heading';
           this.#heading.ariaLevel = headingLevel;
           this.#heading.textContent = optgroup.label;
@@ -406,6 +476,15 @@
       }
 
       const select = document.getElementById('selection');
+
+      SelectUXSearch.className += ' form-control mb-2';
+
+      SelectUXSelections.className += ' mb-2';
+      SelectUXSelections.selectionClassName += ' btn badge text-bg-secondary';
+
+      SelectUXInput.className += ' form-check';
+      SelectUXInput.inputClassName += ' form-check-input';
+      SelectUXInput.labelClassName += ' form-check-label';
 
       const selectUX = new SelectUX({
         select: select,
