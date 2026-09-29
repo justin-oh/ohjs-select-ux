@@ -90,6 +90,37 @@
       search.placeholder = 'Search options...';
       search.className = 'select-ux__search form-control mb-2';
 
+      function onSearchChange() {
+        const value = search.value.toLowerCase();
+
+        let anyVisible = false;
+
+        inputs.forEach(function(input) {
+          const match = input.labels[0].textContent.toLowerCase().includes(value);
+
+          anyVisible |= match;
+
+          input.parentNode.style.display = match ? '' : 'none';
+        });
+
+        groups.forEach(function(group) {
+          let anyGroupInputVisible = false;
+
+          group.querySelectorAll('.select-ux__input-wrapper').forEach(function(div) {
+            anyGroupInputVisible |= div.style.display !== 'none';
+          });
+
+          group.style.display = anyGroupInputVisible ? '' : 'none';
+
+          anyVisible |= anyGroupInputVisible;
+        });
+
+        inputContainerEmpty.style.display = anyVisible ? 'none' : '';
+      }
+
+      search.addEventListener('input', onSearchChange);
+      search.addEventListener('change', onSearchChange);
+
       container.appendChild(search);
 
       const selections = document.createElement('div');
@@ -99,6 +130,13 @@
 
       const inputContainer = document.createElement('div');
       inputContainer.className = 'select-ux__inputs';
+
+      const inputContainerEmpty = document.createElement('div');
+      inputContainerEmpty.className = 'select-ux__inputs__empty';
+      inputContainerEmpty.textContent = 'No options found.';
+      inputContainerEmpty.style.display = 'none';
+
+      inputContainer.appendChild(inputContainerEmpty);
 
       container.appendChild(inputContainer);
 
@@ -206,6 +244,7 @@
       select.remove();
 
       onInputChange();
+      onSearchChange();
     }
 
     selectUX(document.getElementById('selection'));
