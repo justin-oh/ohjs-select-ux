@@ -80,7 +80,10 @@
         #selections;
         #inputs;
 
-        constructor(select, groupHeadingLevel = 4) {
+        constructor({
+          select,
+          groupHeadingLevel = 4,
+        }) {
           if (!(select instanceof HTMLSelectElement)) {
             throw new Error('You must provide a <select> element.');
           }
@@ -117,7 +120,10 @@
             this.#onInputChange();
           });
 
-          this.#inputs = new SelectUXInputs(select, groupHeadingLevel);
+          this.#inputs = new SelectUXInputs({
+            select: select,
+            groupHeadingLevel: groupHeadingLevel,
+          });
 
           this.#el.appendChild(this.#inputs.getEl());
 
@@ -172,7 +178,10 @@
         #inputs = [];
         #groups = [];
 
-        constructor(select, groupHeadingLevel) {
+        constructor({
+          select,
+          groupHeadingLevel,
+        }) {
           this.#el = document.createElement('div');
           this.#el.className = 'select-ux__inputs';
 
@@ -187,13 +196,18 @@
             const child = select.children.item(i);
 
             if ('OPTION' === child.tagName) {
-              const input = new SelectUXInput(child);
+              const input = new SelectUXInput({
+                option: child,
+              });
 
               this.#el.appendChild(input.getEl());
 
               this.#inputs.push(input);
             } else if ('OPTGROUP' === child.tagName) {
-              const group = new SelectUXGroup(child, groupHeadingLevel);
+              const group = new SelectUXGroup({
+                optgroup: child,
+                headingLevel: groupHeadingLevel,
+              });
 
               this.#el.appendChild(group.getEl());
 
@@ -247,7 +261,9 @@
 
         static #count = 0;
 
-        constructor(option) {
+        constructor({
+          option,
+        }) {
           if (!(option instanceof HTMLOptionElement)) {
             throw new Error('You must provide an <option> element.');
           }
@@ -322,7 +338,10 @@
         #heading;
         #inputs = [];
 
-        constructor(optgroup, headingLevel) {
+        constructor({
+          optgroup,
+          headingLevel,
+        }) {
           if (!(optgroup instanceof HTMLOptGroupElement)) {
             throw new Error('You must provide an <optgroup> element.');
           }
@@ -347,7 +366,9 @@
           for (let i = 0; i < optgroup.children.length; i++) {
             const option = optgroup.children.item(i);
 
-            const selectUXInput = new SelectUXInput(option);
+            const selectUXInput = new SelectUXInput({
+              option: option,
+            });
 
             this.#el.appendChild(selectUXInput.getEl());
 
@@ -386,7 +407,9 @@
 
       const select = document.getElementById('selection');
 
-      const selectUX = new SelectUX(select);
+      const selectUX = new SelectUX({
+        select: select,
+      });
     </script>
   </body>
 </html>
