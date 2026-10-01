@@ -7,10 +7,17 @@
   </head>
   <body>
     <div class="container">
+      <div class="form-check">
+        <input id="select_multiple" name="select_multiple" type="checkbox" class="form-check-input">
+        <label for="select_multiple" class="form-check-label">Make select multiple</label>
+      </div>
+      <button id="to_inputs" type="button" class="btn btn-secondary">Change &lt;select&gt; to inputs</button>
+      <button id="enhance" type="button" class="btn btn-secondary" style="display:none">Enhance the inputs</button>
+
       <form>
         <div class="mb-3">
           <label for="selection" class="form-label">Selection</label>
-          <select name="selection" id="selection" class="form-select" required multiple>
+          <select name="selection" id="selection" class="form-select" required>
             <option value="one">One</option>
             <option value="two">Two</option>
             <option value="three" selected>Three</option>
@@ -358,20 +365,46 @@
 
       const select = document.getElementById('selection');
 
-      const selectUX = new SelectUX({
-        select: select,
-        inputParentNodeClassName: 'select-ux__option form-check',
-        inputClassName: 'select-ux__option__input form-check-input',
-        labelClassName: 'select-ux__option__label form-check-label',
+      const selectMultiple = document.getElementById('select_multiple');
+
+      selectMultiple.addEventListener('change', function() {
+        select.multiple = !select.multiple;
       });
 
-      const selectUXEnhanced = new SelectUXEnhanced({
-        container: selectUX.getEl(),
-        enhancedClassName: 'select-ux--enhanced',
-        searchClassName: 'select-ux__search form-control mb-2',
-        selectionsClassName: 'select-ux__selections mb-2',
-        selectionClassName: 'select-ux__selection btn badge text-bg-secondary',
-      })
+      let selectUX = null;
+
+      const toInputs = document.getElementById('to_inputs');
+
+      const enhance = document.getElementById('enhance');
+
+      toInputs.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        selectMultiple.parentNode.remove();
+        toInputs.remove();
+        enhance.style.display = '';
+
+        selectUX = new SelectUX({
+          select: select,
+          inputParentNodeClassName: 'select-ux__option form-check',
+          inputClassName: 'select-ux__option__input form-check-input',
+          labelClassName: 'select-ux__option__label form-check-label',
+        });
+      });
+
+      enhance.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        enhance.remove();
+
+        const selectUXEnhanced = new SelectUXEnhanced({
+          container: selectUX.getEl(),
+          enhancedClassName: 'select-ux--enhanced',
+          searchClassName: 'select-ux__search form-control mb-2',
+          selectionsClassName: 'select-ux__selections mb-2',
+          selectionClassName: 'select-ux__selection btn badge text-bg-secondary',
+        });
+      });
     </script>
   </body>
 </html>
