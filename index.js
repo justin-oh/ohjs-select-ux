@@ -34,6 +34,12 @@ class SelectUX {
       throw new Error('The <select> element must have ID and NAME attributes.');
     }
 
+    if (htmlSelectElement.multiple && !htmlSelectElement.name.endsWith('[]')) {
+      throw new Error(
+        'The NAME of the <select multiple> element must end with [].',
+      );
+    }
+
     this.#el = document.createElement('div');
     this.#el.id = htmlSelectElement.id;
     this.#el.className = className;
@@ -113,9 +119,7 @@ class SelectUX {
   }
 
   #toggleDropdown() {
-    const visible = this.#dropdown.style.display !== 'none';
-
-    if (visible) {
+    if (this.#dropdown.checkVisibility()) {
       this.#closeDropdown(true);
     } else {
       this.#openDropdown();
@@ -328,6 +332,36 @@ class SelectUXOptions {
         this.#groups.push(group);
       }
     }
+
+    document.addEventListener('select-ux:option:navigate', (e) => {
+      const inputs = this.#el.querySelectorAll('input');
+
+      const visible = [];
+
+      inputs.forEach((input) => {
+        if (input.checkVisibility()) {
+          visible.push(input);
+        }
+      });
+
+      if ('next' === e.detail.direction) {
+        visible.reverse();
+      }
+
+      let previous = null;
+
+      for (let i = 0; i < visible.length; i++) {
+        if (visible[i] === e.detail.input) {
+          break;
+        }
+
+        previous = visible[i];
+      }
+
+      if (previous) {
+        previous.focus();
+      }
+    });
   }
 
   getEl() {
@@ -394,8 +428,15 @@ class SelectUXOption {
     this.#el = document.createElement('div');
     this.#el.className = className;
 
+    let ariaLabel = option.textContent;
+
+    if ('OPTGROUP' === option.parentNode.tagName) {
+      ariaLabel = `${option.parentNode.label}: ${ariaLabel}`;
+    }
+
     this.#input = document.createElement('input');
     this.#input.id = htmlSelectElement.id + '_' + SelectUXOption.#count++;
+    this.#input.ariaLabel = ariaLabel;
     this.#input.value = option.value;
     this.#input.name = htmlSelectElement.name;
     this.#input.checked = option.selected;
@@ -403,7 +444,6 @@ class SelectUXOption {
 
     if (htmlSelectElement.multiple) {
       this.#input.type = 'checkbox';
-      this.#input.name += '[]';
     } else {
       this.#input.type = 'radio';
       this.#input.required = htmlSelectElement.required;
@@ -411,6 +451,25 @@ class SelectUXOption {
 
     this.#input.addEventListener('change', () => {
       SelectUXOption.#dispatchEvent();
+    });
+
+    this.#input.addEventListener('keydown', (e) => {
+      const isArrowUp = 'ArrowUp' === e.code;
+      const isArrowDown = 'ArrowDown' === e.code;
+
+      if (isArrowUp || isArrowDown) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const event = new CustomEvent('select-ux:option:navigate', {
+          detail: {
+            input: this.#input,
+            direction: isArrowUp ? 'previous' : 'next',
+          },
+        });
+
+        document.dispatchEvent(event);
+      }
     });
 
     this.#label = document.createElement('label');
