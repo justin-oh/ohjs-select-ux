@@ -110,7 +110,7 @@
           this.#el = document.createElement('div');
           this.#el.id = htmlSelectElement.id;
           this.#el.className = className;
-          this.#el.style.position = 'relative';
+          this.#el.style.setProperty('position', 'relative', 'important');
 
           this.#select = new SelectUXSelect({
             className: selectClassName,
@@ -124,10 +124,10 @@
 
           this.#dropdown = document.createElement('div');
           this.#dropdown.className = dropdownClassName;
-          this.#dropdown.style.display = 'none';
-          this.#dropdown.style.position = 'absolute';
-          this.#dropdown.style.left = '0';
-          this.#dropdown.style.right = '0';
+          this.#dropdown.style.setProperty('display', 'none', 'important');
+          this.#dropdown.style.setProperty('position', 'absolute', 'important');
+          this.#dropdown.style.setProperty('left', '0', 'important');
+          this.#dropdown.style.setProperty('right', '0', 'important');
 
           this.#el.appendChild(this.#dropdown);
 
