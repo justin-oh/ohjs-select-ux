@@ -255,6 +255,7 @@
         #addValue(selectUXOption) {
           const value = document.createElement('button');
           value.type = 'button';
+          value.title = 'Remove option';
           value.className = this.#valueClassName;
           value.textContent = selectUXOption.getLabel();
 
