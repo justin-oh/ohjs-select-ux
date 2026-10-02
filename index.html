@@ -67,6 +67,14 @@
         gap: 0.25rem;
         align-items: center;
       }
+
+      .btn-xs {
+        --bs-btn-padding-y: 0;
+        --bs-btn-padding-x: 0.25rem;
+        --bs-btn-font-size: 0.875rem;
+        --bs-btn-border-radius: calc(var(--bs-border-radius-sm)/2);
+        height: 1.5rem;
+      }
     </style>
 
     <script src="index.js"></script>
@@ -78,7 +86,7 @@
         selectClassName: 'select-ux__select form-select',
         dropdownClassName: 'select-ux__select form-control',
         searchClassName: 'select-ux__search form-control mb-2',
-        selectValueClassName: 'select-ux__value btn badge text-bg-secondary',
+        selectValueClassName: 'select-ux__value btn btn-xs btn-secondary',
         optionClassName: 'select-ux__option form-check',
         optionInputClassName: 'select-ux__option__input form-check-input',
         optionLabelClassName: 'select-ux__option__label form-check-label',
