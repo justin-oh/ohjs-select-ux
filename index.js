@@ -90,20 +90,38 @@ class SelectUX {
 
     htmlSelectElement.remove();
 
-    this.#el.addEventListener('click', function (e) {
+    this.#el.addEventListener('click', (e) => {
+      // prevents click events from bubbling to the document
       e.stopPropagation();
     });
 
     document.addEventListener('click', () => {
+      // clicking anywhere outside of the SelectUX DOM
+      // will close the dropdown
       this.#closeDropdown(false);
     });
 
-    // this.#el.addEventListener('focusout', (e) => {
-    //   this.#closeDropdown(false);
-    // });
+    document.addEventListener('focusin', (e) => {
+      if (!this.#el.contains(e.target)) {
+        // something received focus outside of the SelectUX
+        this.#closeDropdown(false);
+      }
+    });
 
-    document.addEventListener('select-ux:interact', () => {
+    document.addEventListener('select-ux:select:toggle', () => {
       this.#toggleDropdown();
+    });
+
+    document.addEventListener('select-ux:select:open', () => {
+      this.#openDropdown();
+    });
+
+    document.addEventListener('select-ux:select:close', () => {
+      this.#closeDropdown(true);
+    });
+
+    document.addEventListener('select-ux:option:escape', () => {
+      this.#closeDropdown(true);
     });
 
     document.addEventListener('select-ux:search', () => {
@@ -129,6 +147,7 @@ class SelectUX {
   #openDropdown() {
     this.#dropdown.style.display = '';
     this.#search.focus();
+    this.#options.setScrollTop(0);
   }
 
   #closeDropdown(focus) {
@@ -158,8 +177,8 @@ class SelectUXSelect {
   #values;
   #valueClassName;
 
-  static #dispatchEvent() {
-    const event = new Event('select-ux:interact');
+  static #dispatchEvent(eventType) {
+    const event = new Event(eventType);
 
     document.dispatchEvent(event);
   }
@@ -178,12 +197,16 @@ class SelectUXSelect {
     this.#el.addEventListener('click', function (e) {
       e.preventDefault();
 
-      SelectUXSelect.#dispatchEvent();
+      SelectUXSelect.#dispatchEvent('select-ux:select:toggle');
     });
 
     this.#el.addEventListener('keydown', function (e) {
       if (['ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) {
-        SelectUXSelect.#dispatchEvent();
+        e.preventDefault();
+
+        SelectUXSelect.#dispatchEvent('select-ux:select:open');
+      } else if ('Escape' === e.code) {
+        SelectUXSelect.#dispatchEvent('select-ux:select:close');
       }
     });
 
@@ -231,6 +254,15 @@ class SelectUXSelect {
       e.preventDefault();
 
       selectUXOption.setChecked(false);
+    });
+
+    value.addEventListener('keydown', function (e) {
+      if ('Space' === e.code || 'Enter' === e.code) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        selectUXOption.setChecked(false);
+      }
     });
 
     this.#values.appendChild(value);
@@ -368,6 +400,10 @@ class SelectUXOptions {
     return this.#el;
   }
 
+  setScrollTop(scrollTop) {
+    this.#el.scrollTop = scrollTop;
+  }
+
   filter(value) {
     let anyVisible = false;
 
@@ -469,6 +505,15 @@ class SelectUXOption {
         });
 
         document.dispatchEvent(event);
+      } else if ('Escape' === e.code) {
+        const event = new Event('select-ux:option:escape');
+
+        document.dispatchEvent(event);
+      } else if ('Enter' === e.code) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        this.setChecked(!this.#input.checked);
       }
     });
 
