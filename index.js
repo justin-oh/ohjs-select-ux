@@ -142,6 +142,8 @@ class SelectUX {
       throw new Error('`value` must be null, string, or array');
     }
 
+    value = value.split(',');
+
     this.#options.setValue(value);
 
     this.#onInputChange();
