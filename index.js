@@ -137,6 +137,37 @@ class SelectUX {
     this.#onInputChange();
   }
 
+  setValue(value) {
+    if (null !== value && typeof value !== 'string' && !Array.isArray(value)) {
+      throw new Error('`value` must be null, string, or array');
+    }
+
+    this.#options.setValue(value);
+
+    this.#onInputChange();
+  }
+
+  clearOptions() {
+    this.#options.clearOptions();
+
+    this.#onSearchChange();
+    this.#onInputChange();
+  }
+
+  addOption(value, label, group = null) {
+    this.#options.addOption(value, label, group);
+
+    this.#onSearchChange();
+    this.#onInputChange();
+  }
+
+  removeOption(value, label) {
+    this.#options.removeOption(value, label);
+
+    this.#onSearchChange();
+    this.#onInputChange();
+  }
+
   #toggleDropdown() {
     if (this.#dropdown.checkVisibility()) {
       this.#closeDropdown(true);
@@ -314,12 +345,21 @@ class SelectUXSearch {
 class SelectUXOptions {
   #el;
   #emptyMessage;
-  #options = [];
-  #groups = [];
+  #selectUXOptions = [];
+  #selectUXGroups = [];
+  #optionClassName;
+  #optionInputClassName;
+  #optionLabelClassName;
+  #groupClassName;
+  #groupHeadingClassName;
+  #groupHeadingLevel;
+  #selectId;
+  #selectName;
+  #selectMultiple;
+  #selectRequired;
 
   constructor({
     htmlSelectElement,
-    groupHeadingLevel,
     className,
     emptyMessageClassName,
     emptyMessage,
@@ -328,7 +368,13 @@ class SelectUXOptions {
     optionLabelClassName,
     groupClassName,
     groupHeadingClassName,
+    groupHeadingLevel,
   }) {
+    this.#selectId = htmlSelectElement.id;
+    this.#selectName = htmlSelectElement.name;
+    this.#selectMultiple = htmlSelectElement.multiple;
+    this.#selectRequired = htmlSelectElement.required;
+
     this.#el = document.createElement('div');
     this.#el.className = className;
 
@@ -339,38 +385,24 @@ class SelectUXOptions {
 
     this.#el.appendChild(this.#emptyMessage);
 
+    this.#optionClassName = optionClassName;
+    this.#optionInputClassName = optionInputClassName;
+    this.#optionLabelClassName = optionLabelClassName;
+    this.#groupClassName = groupClassName;
+    this.#groupHeadingClassName = groupHeadingClassName;
+    this.#groupHeadingLevel = groupHeadingLevel;
+
     for (let i = 0; i < htmlSelectElement.children.length; i++) {
       const child = htmlSelectElement.children.item(i);
 
-      if ('OPTION' === child.tagName) {
-        const input = new SelectUXOption({
-          option: child,
-          className: optionClassName,
-          inputClassName: optionInputClassName,
-          labelClassName: optionLabelClassName,
-        });
-
-        this.#el.appendChild(input.getEl());
-
-        this.#options.push(input);
-      } else if ('OPTGROUP' === child.tagName) {
-        const group = new SelectUXGroup({
-          optgroup: child,
-          headingLevel: groupHeadingLevel,
-          className: groupClassName,
-          headingClassName: groupHeadingClassName,
-          optionClassName,
-          optionInputClassName,
-          optionLabelClassName,
-        });
-
-        this.#el.appendChild(group.getEl());
-
-        this.#groups.push(group);
+      if (child instanceof HTMLOptionElement) {
+        this.#addOption(child);
+      } else if (child instanceof HTMLOptGroupElement) {
+        this.#addGroup(child);
       }
     }
 
-    document.addEventListener('select-ux:option:navigate', (e) => {
+    this.#el.addEventListener('select-ux:option:navigate', (e) => {
       const inputs = this.#el.querySelectorAll('input');
 
       const visible = [];
@@ -412,11 +444,11 @@ class SelectUXOptions {
   filter(value) {
     let anyVisible = false;
 
-    this.#options.forEach(function (selectUXOption) {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
       anyVisible |= selectUXOption.filter(value);
     });
 
-    this.#groups.forEach(function (selectUXGroup) {
+    this.#selectUXGroups.forEach(function (selectUXGroup) {
       anyVisible |= selectUXGroup.filter(value);
     });
 
@@ -426,19 +458,135 @@ class SelectUXOptions {
   getChecked() {
     const checked = [];
 
-    this.#options.forEach(function (selectUXOption) {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
       if (selectUXOption.getChecked()) {
         checked.push(selectUXOption);
       }
     });
 
-    this.#groups.forEach(function (selectUXGroup) {
+    this.#selectUXGroups.forEach(function (selectUXGroup) {
       selectUXGroup.getChecked().forEach(function (selectUXOption) {
         checked.push(selectUXOption);
       });
     });
 
     return checked;
+  }
+
+  setValue(value) {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
+      selectUXOption.setChecked(selectUXOption.isValue(value));
+    });
+
+    this.#selectUXGroups.forEach(function (selectUXGroup) {
+      selectUXGroup.getOptions().forEach(function (selectUXOption) {
+        selectUXOption.setChecked(selectUXOption.isValue(value));
+      });
+    });
+  }
+
+  clearOptions() {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
+      selectUXOption.getEl().remove();
+    });
+
+    this.#selectUXGroups.forEach(function (selectUXGroup) {
+      selectUXGroup.clearOptions();
+
+      selectUXGroup.getEl().remove();
+    });
+
+    this.#selectUXOptions = [];
+    this.#selectUXGroups = [];
+  }
+
+  addOption(value, label, group = null) {
+    console.log(value, label, group);
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+
+    if (group) {
+      let groupFound = false;
+
+      for (let i = 0; i < this.#selectUXGroups.length; i++) {
+        const selectUXGroup = this.#selectUXGroups[i];
+
+        if (selectUXGroup.getLabel() === group) {
+          groupFound = true;
+
+          selectUXGroup.addOption(option);
+
+          break;
+        }
+      }
+
+      if (!groupFound) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = group;
+
+        optgroup.appendChild(option);
+
+        this.#addGroup(optgroup);
+      }
+    } else {
+      this.#addOption(option);
+    }
+  }
+
+  removeOption(value) {
+    const keepOptions = [];
+
+    this.#selectUXOptions.forEach(function (selectUXOption) {
+      if (selectUXOption.isValue(value)) {
+        selectUXOption.getEl().remove();
+      } else {
+        keepOptions.push(selectUXOption);
+      }
+    });
+
+    this.#selectUXOptions = keepOptions;
+
+    this.#selectUXGroups.forEach(function (selectUXGroup) {
+      selectUXGroup.removeOption(value);
+    });
+  }
+
+  #addOption(option) {
+    const selectUXOption = new SelectUXOption({
+      option: option,
+      className: this.#optionClassName,
+      inputClassName: this.#optionInputClassName,
+      labelClassName: this.#optionLabelClassName,
+      selectId: this.#selectId,
+      selectName: this.#selectName,
+      selectMultiple: this.#selectMultiple,
+      selectRequired: this.#selectRequired,
+    });
+
+    this.#el.appendChild(selectUXOption.getEl());
+
+    this.#selectUXOptions.push(selectUXOption);
+  }
+
+  #addGroup(optgroup) {
+    const selectUXGroup = new SelectUXGroup({
+      optgroup: optgroup,
+      headingLevel: this.#groupHeadingLevel,
+      className: this.#groupClassName,
+      headingClassName: this.#groupHeadingClassName,
+      optionClassName: this.#optionClassName,
+      optionInputClassName: this.#optionInputClassName,
+      optionLabelClassName: this.#optionLabelClassName,
+      selectId: this.#selectId,
+      selectName: this.#selectName,
+      selectMultiple: this.#selectMultiple,
+      selectRequired: this.#selectRequired,
+    });
+
+    this.#el.appendChild(selectUXGroup.getEl());
+
+    this.#selectUXGroups.push(selectUXGroup);
   }
 }
 
@@ -449,15 +597,18 @@ class SelectUXOption {
 
   static #count = 0;
 
-  constructor({ option, className, inputClassName, labelClassName }) {
+  constructor({
+    option,
+    className,
+    inputClassName,
+    labelClassName,
+    selectId,
+    selectName,
+    selectMultiple,
+    selectRequired,
+  }) {
     if (!(option instanceof HTMLOptionElement)) {
       throw new Error('You must provide an <option> element.');
-    }
-
-    const htmlSelectElement = option.closest('select');
-
-    if (!(htmlSelectElement instanceof HTMLSelectElement)) {
-      throw new Error('Could not find the parent <select> element.');
     }
 
     this.#el = document.createElement('div');
@@ -465,23 +616,23 @@ class SelectUXOption {
 
     let ariaLabel = option.textContent;
 
-    if ('OPTGROUP' === option.parentNode.tagName) {
+    if (option.parentNode instanceof HTMLOptGroupElement) {
       ariaLabel = `${option.parentNode.label}: ${ariaLabel}`;
     }
 
     this.#input = document.createElement('input');
-    this.#input.id = htmlSelectElement.id + '_' + SelectUXOption.#count++;
+    this.#input.id = selectId + '_' + SelectUXOption.#count++;
     this.#input.ariaLabel = ariaLabel;
     this.#input.value = option.value;
-    this.#input.name = htmlSelectElement.name;
+    this.#input.name = selectName;
     this.#input.checked = option.selected;
     this.#input.className = inputClassName;
 
-    if (htmlSelectElement.multiple) {
+    if (selectMultiple) {
       this.#input.type = 'checkbox';
     } else {
       this.#input.type = 'radio';
-      this.#input.required = htmlSelectElement.required;
+      this.#input.required = selectRequired;
     }
 
     this.#input.addEventListener('change', () => {
@@ -523,6 +674,12 @@ class SelectUXOption {
     return this.#el;
   }
 
+  isValue(value) {
+    return Array.isArray(value)
+      ? value.includes(this.#input.value)
+      : value === this.#input.value;
+  }
+
   getLabel() {
     return this.#label.textContent;
   }
@@ -558,7 +715,14 @@ class SelectUXOption {
 class SelectUXGroup {
   #el;
   #heading;
-  #options = [];
+  #selectUXOptions = [];
+  #optionClassName;
+  #optionInputClassName;
+  #optionLabelClassName;
+  #selectId;
+  #selectName;
+  #selectMultiple;
+  #selectRequired;
 
   constructor({
     optgroup,
@@ -568,16 +732,19 @@ class SelectUXGroup {
     optionClassName,
     optionInputClassName,
     optionLabelClassName,
+    selectId,
+    selectName,
+    selectMultiple,
+    selectRequired,
   }) {
     if (!(optgroup instanceof HTMLOptGroupElement)) {
       throw new Error('You must provide an <optgroup> element.');
     }
 
-    const select = optgroup.closest('select');
-
-    if (!(select instanceof HTMLSelectElement)) {
-      throw new Error('Could not find the parent <select> element.');
-    }
+    this.#selectId = selectId;
+    this.#selectName = selectName;
+    this.#selectMultiple = selectMultiple;
+    this.#selectRequired = selectRequired;
 
     this.#el = document.createElement('div');
     this.#el.className = className;
@@ -590,19 +757,14 @@ class SelectUXGroup {
 
     this.#el.appendChild(this.#heading);
 
+    this.#optionClassName = optionClassName;
+    this.#optionInputClassName = optionInputClassName;
+    this.#optionLabelClassName = optionLabelClassName;
+
     for (let i = 0; i < optgroup.children.length; i++) {
       const option = optgroup.children.item(i);
 
-      const selectUXOption = new SelectUXOption({
-        option: option,
-        className: optionClassName,
-        inputClassName: optionInputClassName,
-        labelClassName: optionLabelClassName,
-      });
-
-      this.#el.appendChild(selectUXOption.getEl());
-
-      this.#options.push(selectUXOption);
+      this.addOption(option);
     }
   }
 
@@ -610,10 +772,18 @@ class SelectUXGroup {
     return this.#el;
   }
 
+  getLabel() {
+    return this.#heading.textContent;
+  }
+
+  getOptions() {
+    return this.#selectUXOptions;
+  }
+
   getChecked() {
     const checked = [];
 
-    this.#options.forEach(function (selectUXOption) {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
       if (selectUXOption.getChecked()) {
         checked.push(selectUXOption);
       }
@@ -625,12 +795,51 @@ class SelectUXGroup {
   filter(value) {
     let anyVisible = false;
 
-    this.#options.forEach(function (selectUXOption) {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
       anyVisible |= selectUXOption.filter(value);
     });
 
     this.#el.style.display = anyVisible ? '' : 'none';
 
     return anyVisible;
+  }
+
+  clearOptions() {
+    this.#selectUXOptions.forEach(function (selectUXOption) {
+      selectUXOption.getEl().remove();
+    });
+
+    this.#selectUXOptions = [];
+  }
+
+  addOption(option) {
+    const selectUXOption = new SelectUXOption({
+      option: option,
+      className: this.#optionClassName,
+      inputClassName: this.#optionInputClassName,
+      labelClassName: this.#optionLabelClassName,
+      selectId: this.#selectId,
+      selectName: this.#selectName,
+      selectMultiple: this.#selectMultiple,
+      selectRequired: this.#selectRequired,
+    });
+
+    this.#el.appendChild(selectUXOption.getEl());
+
+    this.#selectUXOptions.push(selectUXOption);
+  }
+
+  removeOption(value) {
+    const keepOptions = [];
+
+    this.#selectUXOptions.forEach(function (selectUXOption) {
+      if (selectUXOption.isValue(value)) {
+        selectUXOption.getEl().remove();
+      } else {
+        keepOptions.push(selectUXOption);
+      }
+    });
+
+    this.#selectUXOptions = keepOptions;
   }
 }

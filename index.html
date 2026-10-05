@@ -70,6 +70,14 @@
           <button type="submit" class="btn btn-primary">Submit</button>
         </div>
       </form>
+
+      <input type="text" id="value" placeholder="Value">
+      <input type="text" id="label" placeholder="Label">
+      <input type="text" id="group" placeholder="Group">
+      <button id="add_option">Add option</button>
+      <button id="remove_option">Remove option</button>
+      <button id="clear_options">Clear options</button>
+      <button id="set_value">Set value</button>
     </div>
 
     <style>
@@ -125,6 +133,42 @@
       options.htmlSelectElement = document.getElementById('select_multiple');
 
       const selectUXMultiple = new SelectUX(options);
+
+      const value = document.getElementById('value');
+      const label = document.getElementById('label');
+      const group = document.getElementById('group');
+
+      const addOption = document.getElementById('add_option');
+
+      addOption.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        selectUXMultiple.addOption(value.value, label.value, group.value);
+      });
+
+      const removeOption = document.getElementById('remove_option');
+
+      removeOption.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        selectUXMultiple.removeOption(value.value);
+      });
+
+      const clearOptions = document.getElementById('clear_options');
+
+      clearOptions.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        selectUXMultiple.clearOptions();
+      });
+
+      const setValue = document.getElementById('set_value');
+
+      setValue.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        selectUXMultiple.setValue(value.value);
+      });
     </script>
   </body>
 </html>
