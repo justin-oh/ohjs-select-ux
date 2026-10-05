@@ -61,6 +61,7 @@ class SelectUX {
     this.#dropdown.style.setProperty('position', 'absolute', 'important');
     this.#dropdown.style.setProperty('left', '0', 'important');
     this.#dropdown.style.setProperty('right', '0', 'important');
+    this.#dropdown.style.setProperty('z-index', '9999', 'important');
 
     this.#el.appendChild(this.#dropdown);
 
@@ -108,27 +109,27 @@ class SelectUX {
       }
     });
 
-    document.addEventListener('select-ux:select:toggle', () => {
+    this.#el.addEventListener('select-ux:select:toggle', () => {
       this.#toggleDropdown();
     });
 
-    document.addEventListener('select-ux:select:open', () => {
+    this.#el.addEventListener('select-ux:select:open', () => {
       this.#openDropdown();
     });
 
-    document.addEventListener('select-ux:select:close', () => {
+    this.#el.addEventListener('select-ux:select:close', () => {
       this.#closeDropdown(true);
     });
 
-    document.addEventListener('select-ux:option:escape', () => {
+    this.#el.addEventListener('select-ux:option:escape', () => {
       this.#closeDropdown(true);
     });
 
-    document.addEventListener('select-ux:search', () => {
+    this.#el.addEventListener('select-ux:search:change', () => {
       this.#onSearchChange();
     });
 
-    document.addEventListener('select-ux:change', () => {
+    this.#el.addEventListener('select-ux:option:change', () => {
       this.#onInputChange();
     });
 
@@ -177,12 +178,6 @@ class SelectUXSelect {
   #values;
   #valueClassName;
 
-  static #dispatchEvent(eventType) {
-    const event = new Event(eventType);
-
-    document.dispatchEvent(event);
-  }
-
   constructor({
     className,
     placeholderClassName,
@@ -194,19 +189,19 @@ class SelectUXSelect {
     this.#el.className = className;
     this.#el.tabIndex = 0;
 
-    this.#el.addEventListener('click', function (e) {
+    this.#el.addEventListener('click', (e) => {
       e.preventDefault();
 
-      SelectUXSelect.#dispatchEvent('select-ux:select:toggle');
+      this.#dispatchEvent('select-ux:select:toggle');
     });
 
-    this.#el.addEventListener('keydown', function (e) {
+    this.#el.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) {
         e.preventDefault();
 
-        SelectUXSelect.#dispatchEvent('select-ux:select:open');
+        this.#dispatchEvent('select-ux:select:open');
       } else if ('Escape' === e.code) {
-        SelectUXSelect.#dispatchEvent('select-ux:select:close');
+        this.#dispatchEvent('select-ux:select:close');
       }
     });
 
@@ -267,16 +262,18 @@ class SelectUXSelect {
 
     this.#values.appendChild(value);
   }
+
+  #dispatchEvent(eventType) {
+    const event = new Event(eventType, {
+      bubbles: true,
+    });
+
+    this.#el.dispatchEvent(event);
+  }
 }
 
 class SelectUXSearch {
   #el;
-
-  static #dispatchEvent() {
-    const event = new Event('select-ux:search');
-
-    document.dispatchEvent(event);
-  }
 
   constructor({ className, placeholder }) {
     this.#el = document.createElement('input');
@@ -285,11 +282,11 @@ class SelectUXSearch {
     this.#el.placeholder = placeholder;
 
     this.#el.addEventListener('input', () => {
-      SelectUXSearch.#dispatchEvent();
+      this.#dispatchEvent();
     });
 
     this.#el.addEventListener('change', () => {
-      SelectUXSearch.#dispatchEvent();
+      this.#dispatchEvent();
     });
   }
 
@@ -303,6 +300,14 @@ class SelectUXSearch {
 
   getValue() {
     return this.#el.value;
+  }
+
+  #dispatchEvent() {
+    const event = new Event('select-ux:search:change', {
+      bubbles: true,
+    });
+
+    this.#el.dispatchEvent(event);
   }
 }
 
@@ -444,12 +449,6 @@ class SelectUXOption {
 
   static #count = 0;
 
-  static #dispatchEvent() {
-    const event = new Event('select-ux:change');
-
-    document.dispatchEvent(event);
-  }
-
   constructor({ option, className, inputClassName, labelClassName }) {
     if (!(option instanceof HTMLOptionElement)) {
       throw new Error('You must provide an <option> element.');
@@ -486,7 +485,7 @@ class SelectUXOption {
     }
 
     this.#input.addEventListener('change', () => {
-      SelectUXOption.#dispatchEvent();
+      this.#dispatchEvent('select-ux:option:change');
     });
 
     this.#input.addEventListener('keydown', (e) => {
@@ -497,18 +496,12 @@ class SelectUXOption {
         e.preventDefault();
         e.stopImmediatePropagation();
 
-        const event = new CustomEvent('select-ux:option:navigate', {
-          detail: {
-            input: this.#input,
-            direction: isArrowUp ? 'previous' : 'next',
-          },
+        this.#dispatchEvent('select-ux:option:navigate', {
+          input: this.#input,
+          direction: isArrowUp ? 'previous' : 'next',
         });
-
-        document.dispatchEvent(event);
       } else if ('Escape' === e.code) {
-        const event = new Event('select-ux:option:escape');
-
-        document.dispatchEvent(event);
+        this.#dispatchEvent('select-ux:option:escape');
       } else if ('Enter' === e.code) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -541,7 +534,7 @@ class SelectUXOption {
   setChecked(checked) {
     this.#input.checked = checked;
 
-    SelectUXOption.#dispatchEvent();
+    this.#dispatchEvent('select-ux:option:change');
   }
 
   filter(value) {
@@ -550,6 +543,15 @@ class SelectUXOption {
     this.#el.style.display = show ? '' : 'none';
 
     return show;
+  }
+
+  #dispatchEvent(eventType, detail = {}) {
+    const event = new CustomEvent(eventType, {
+      bubbles: true,
+      detail: detail,
+    });
+
+    this.#el.dispatchEvent(event);
   }
 }
 
