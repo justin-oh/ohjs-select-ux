@@ -3,7 +3,7 @@ class SelectUX {
   #select;
   #dropdown;
   #search;
-  #options;
+  #scrollBox;
 
   constructor({
     htmlSelectElement,
@@ -16,9 +16,9 @@ class SelectUX {
     dropdownClassName = 'select-ux__dropdown',
     searchClassName = 'select-ux__search',
     searchPlaceholder = 'Search options...',
-    optionsClassName = 'select-ux__options',
-    optionsEmptyMessageClassName = 'select-ux__options__empty',
-    optionsEmptyMessage = 'No options found.',
+    scrollBoxClassName = 'select-ux__scroll-box',
+    scrollBoxEmptyMessageClassName = 'select-ux__scroll-box__empty',
+    scrollBoxEmptyMessage = 'No options found.',
     optionClassName = 'select-ux__option',
     optionInputClassName = 'select-ux__option__input',
     optionLabelClassName = 'select-ux__option__label',
@@ -72,11 +72,11 @@ class SelectUX {
 
     this.#dropdown.appendChild(this.#search.getEl());
 
-    this.#options = new SelectUXOptions({
+    this.#scrollBox = new SelectUXScrollBox({
       htmlSelectElement,
-      className: optionsClassName,
-      emptyMessageClassName: optionsEmptyMessageClassName,
-      emptyMessage: optionsEmptyMessage,
+      className: scrollBoxClassName,
+      emptyMessageClassName: scrollBoxEmptyMessageClassName,
+      emptyMessage: scrollBoxEmptyMessage,
       optionClassName,
       optionInputClassName,
       optionLabelClassName,
@@ -85,7 +85,7 @@ class SelectUX {
       groupHeadingLevel,
     });
 
-    this.#dropdown.appendChild(this.#options.getEl());
+    this.#dropdown.appendChild(this.#scrollBox.getEl());
 
     htmlSelectElement.after(this.#el);
 
@@ -144,27 +144,27 @@ class SelectUX {
 
     value = value.split(',');
 
-    this.#options.setValue(value);
+    this.#scrollBox.setValue(value);
 
     this.#onInputChange();
   }
 
   clearOptions() {
-    this.#options.clearOptions();
+    this.#scrollBox.clearOptions();
 
     this.#onSearchChange();
     this.#onInputChange();
   }
 
   addOption(value, label, group = null) {
-    this.#options.addOption(value, label, group);
+    this.#scrollBox.addOption(value, label, group);
 
     this.#onSearchChange();
     this.#onInputChange();
   }
 
   removeOption(value, label) {
-    this.#options.removeOption(value, label);
+    this.#scrollBox.removeOption(value, label);
 
     this.#onSearchChange();
     this.#onInputChange();
@@ -181,7 +181,7 @@ class SelectUX {
   #openDropdown() {
     this.#dropdown.style.display = '';
     this.#search.focus();
-    this.#options.setScrollTop(0);
+    this.#scrollBox.setScrollTop(0);
   }
 
   #closeDropdown(focus) {
@@ -195,11 +195,11 @@ class SelectUX {
   #onSearchChange() {
     const value = this.#search.getValue().toLowerCase();
 
-    this.#options.filter(value);
+    this.#scrollBox.filter(value);
   }
 
   #onInputChange() {
-    const checked = this.#options.getChecked();
+    const checked = this.#scrollBox.getChecked();
 
     this.#select.render(checked);
   }
@@ -344,7 +344,7 @@ class SelectUXSearch {
   }
 }
 
-class SelectUXOptions {
+class SelectUXScrollBox {
   #el;
   #emptyMessage;
   #selectUXOptions = [];
