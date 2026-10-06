@@ -503,7 +503,6 @@ class SelectUXScrollBox {
   }
 
   addOption(value, label, group = null) {
-    console.log(value, label, group);
     const option = document.createElement('option');
     option.value = value;
     option.textContent = label;
