@@ -132,6 +132,9 @@ class SelectUX {
 
     this.#search.getEl().addEventListener('keydown', (e) => {
       if (!e.shiftKey && 'Tab' === e.code) {
+        // This overrides the default behaviour of tabbing into an array
+        // of radios which is to focus the checked radio.
+        // The override focuses the first visible radio.
         const visible = this.#scrollBox.getVisibleInputs();
 
         if (visible.length > 0) {
@@ -282,6 +285,7 @@ class SelectUXSelect {
       this.#dispatchEvent('select-ux:select:toggle');
     });
 
+    // This emulates the default behaviour of <select> element key presses.
     this.#el.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) {
         e.preventDefault();
@@ -370,6 +374,7 @@ class SelectUXSelect {
       selectUXOption.setChecked(false);
     });
 
+    // This matches the overridden select behaviour of radios/checkboxes.
     value.addEventListener('keydown', (e) => {
       if ('Space' === e.code || 'Enter' === e.code) {
         e.stopPropagation();
@@ -502,6 +507,12 @@ class SelectUXScrollBox {
       }
     }
 
+    // This preserves the TAB behaviour of an array of checkboxes.
+    // Tabbing backwards from the first element
+    // or forwards from the last element will focus out of the array.
+    // This also overrides the behaviour of an array of radios which is to
+    // focus the selected element. An array of radios will behave like an
+    // array of checkboxes.
     this.#el.addEventListener('keydown', (e) => {
       if ('Tab' !== e.code) {
         return;
@@ -797,6 +808,9 @@ class SelectUXOption {
       const isArrowDown = 'ArrowDown' === e.code;
 
       if (isArrowUp || isArrowDown) {
+        // This overrides the default behaviour of an array of radios where
+        // pressing Up/Down simultaneously navigates to and checks the input.
+        // The override only navigates.
         e.preventDefault();
         e.stopImmediatePropagation();
 
@@ -807,6 +821,7 @@ class SelectUXOption {
       } else if ('Escape' === e.code) {
         this.#dispatchEvent('select-ux:option:escape');
       } else if ('Enter' === e.code) {
+        // This overrides the default behaviour of submitting the form.
         e.preventDefault();
         e.stopImmediatePropagation();
 
