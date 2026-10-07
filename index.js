@@ -9,7 +9,6 @@ class SelectUX {
   constructor({
     htmlSelectElement,
     className = 'select-ux',
-    selectClassName = 'select-ux__select',
     selectDisabledClassName = 'select-ux__select--disabled',
     selectPlaceholderClassName = 'select-ux__select__placeholder',
     selectPlaceholder = 'Choose an option',
@@ -50,14 +49,12 @@ class SelectUX {
     this.#el.style.setProperty('position', 'relative', 'important');
 
     this.#select = new SelectUXSelect({
-      className: selectClassName,
+      htmlSelectElement: htmlSelectElement,
       disabledClassName: selectDisabledClassName,
       placeholderClassName: selectPlaceholderClassName,
       placeholder: selectPlaceholder,
       valuesClassName: selectValuesClassName,
       valueClassName: selectValueClassName,
-      required: htmlSelectElement.required,
-      disabled: htmlSelectElement.disabled,
     });
 
     this.#el.appendChild(this.#select.getEl());
@@ -256,19 +253,17 @@ class SelectUXSelect {
   #disabled;
 
   constructor({
-    className,
+    htmlSelectElement,
     disabledClassName,
     placeholderClassName,
     placeholder,
     valuesClassName,
     valueClassName,
-    required,
-    disabled,
   }) {
     this.#disabledClassName = disabledClassName;
 
     this.#el = document.createElement('select-ux');
-    this.#el.className = className;
+    this.#el.className = htmlSelectElement.className;
     this.#el.tabIndex = 0;
     this.#el.style.setProperty('position', 'relative', 'important');
 
@@ -307,8 +302,8 @@ class SelectUXSelect {
 
     this.#valueClassName = valueClassName;
 
-    this.setRequired(required);
-    this.setDisabled(disabled);
+    this.setRequired(htmlSelectElement.required);
+    this.setDisabled(htmlSelectElement.disabled);
   }
 
   setDisabled(disabled) {
