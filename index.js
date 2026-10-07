@@ -4,7 +4,7 @@ class SelectUX {
   #dropdown;
   #search;
   #scrollBox;
-  #disabled = false;
+  #disabled;
 
   constructor({
     htmlSelectElement,
@@ -235,13 +235,24 @@ class SelectUX {
   }
 }
 
+class SelectUXElement extends HTMLElement {
+  static formAssociated = true;
+
+  constructor() {
+    super();
+    this.internals_ = this.attachInternals();
+  }
+}
+
+window.customElements.define('select-ux', SelectUXElement);
+
 class SelectUXSelect {
   #disabledClassName;
   #el;
   #placeholder;
   #values;
   #valueClassName;
-  #validation;
+  #required;
   #disabled;
 
   constructor({
@@ -256,7 +267,7 @@ class SelectUXSelect {
   }) {
     this.#disabledClassName = disabledClassName;
 
-    this.#el = document.createElement('div');
+    this.#el = document.createElement('select-ux');
     this.#el.className = className;
     this.#el.tabIndex = 0;
     this.#el.style.setProperty('position', 'relative', 'important');
@@ -283,21 +294,6 @@ class SelectUXSelect {
       }
     });
 
-    this.#validation = document.createElement('input');
-    this.#validation.type = 'text';
-    this.#validation.required = required;
-    this.#validation.style.setProperty('position', 'absolute', 'important');
-    this.#validation.style.setProperty('top', '0', 'important');
-    this.#validation.style.setProperty('left', '0', 'important');
-    this.#validation.style.setProperty('right', '0', 'important');
-    this.#validation.style.setProperty('bottom', '0', 'important');
-    this.#validation.style.setProperty('opacity', '0', 'important');
-    this.#validation.style.setProperty('z-index', '-1', 'important');
-    this.#validation.setCustomValidity('Please select an item in the list.');
-    this.#validation.tabIndex = -1;
-
-    this.#el.appendChild(this.#validation);
-
     this.#placeholder = document.createElement('div');
     this.#placeholder.className = placeholderClassName;
     this.#placeholder.textContent = placeholder;
@@ -311,6 +307,7 @@ class SelectUXSelect {
 
     this.#valueClassName = valueClassName;
 
+    this.setRequired(required);
     this.setDisabled(disabled);
   }
 
@@ -326,7 +323,8 @@ class SelectUXSelect {
   }
 
   setRequired(required) {
-    this.#validation.required = required;
+    this.#required = required;
+    this.#setValidity();
   }
 
   getEl() {
@@ -346,7 +344,7 @@ class SelectUXSelect {
       this.#addValue(selectUXOption);
     });
 
-    this.#validation.value = selectUXOptions.length ? '1' : '';
+    this.#setValidity();
   }
 
   #addValue(selectUXOption) {
@@ -382,6 +380,15 @@ class SelectUXSelect {
     });
 
     this.#values.appendChild(value);
+  }
+
+  #setValidity() {
+    const valueMissing = this.#required ? !this.#values.innerHTML : false;
+
+    this.#el.internals_.setValidity(
+      { valueMissing: valueMissing },
+      'Please select an item in the list.',
+    );
   }
 
   #dispatchEvent(eventType) {
