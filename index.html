@@ -10,7 +10,7 @@
       <form>
         <div class="mb-3">
           <label for="select_single" class="form-label">Select Single</label>
-          <select name="select_single" id="select_single" class="form-select" required>
+          <select name="select_single" id="select_single" class="form-select" required disabled>
             <option value="one">One</option>
             <option value="two">Two</option>
             <option value="three" selected>Three</option>
@@ -91,18 +91,22 @@
             margin-left: 1rem;
           }
         }
-      }
 
-      .select-ux__scroll-box {
-        max-height: 10rem;
-        overflow-y: scroll;
-      }
+        .select-ux__select--disabled {
+          background-color: var(--bs-secondary-bg);
+        }
 
-      .select-ux__select__values {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        align-items: center;
+        .select-ux__scroll-box {
+          max-height: 10rem;
+          overflow-y: scroll;
+        }
+
+        .select-ux__select__values {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+          align-items: center;
+        }
       }
 
       .btn-xs {

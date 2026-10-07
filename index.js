@@ -4,11 +4,13 @@ class SelectUX {
   #dropdown;
   #search;
   #scrollBox;
+  #disabled = false;
 
   constructor({
     htmlSelectElement,
     className = 'select-ux',
     selectClassName = 'select-ux__select',
+    selectDisabledClassName = 'select-ux__select--disabled',
     selectPlaceholderClassName = 'select-ux__select__placeholder',
     selectPlaceholder = 'Choose an option',
     selectValuesClassName = 'select-ux__select__values',
@@ -40,6 +42,8 @@ class SelectUX {
       );
     }
 
+    this.#disabled = htmlSelectElement.disabled;
+
     this.#el = document.createElement('div');
     this.#el.id = htmlSelectElement.id;
     this.#el.className = className;
@@ -47,10 +51,13 @@ class SelectUX {
 
     this.#select = new SelectUXSelect({
       className: selectClassName,
+      disabledClassName: selectDisabledClassName,
       placeholderClassName: selectPlaceholderClassName,
       placeholder: selectPlaceholder,
       valuesClassName: selectValuesClassName,
       valueClassName: selectValueClassName,
+      required: htmlSelectElement.required,
+      disabled: htmlSelectElement.disabled,
     });
 
     this.#el.appendChild(this.#select.getEl());
@@ -131,10 +138,25 @@ class SelectUX {
 
     this.#el.addEventListener('select-ux:option:change', () => {
       this.#onInputChange();
+
+      this.#el.dispatchEvent(new Event('select-ux:change'));
     });
 
     this.#onSearchChange();
     this.#onInputChange();
+  }
+
+  setDisabled(disabled) {
+    this.#disabled = disabled;
+    this.#select.setDisabled(disabled);
+  }
+
+  getEl() {
+    return this.#el;
+  }
+
+  getValue() {
+    return this.#scrollBox.getValue();
   }
 
   setValue(value) {
@@ -147,6 +169,10 @@ class SelectUX {
     this.#scrollBox.setValue(value);
 
     this.#onInputChange();
+  }
+
+  setRequired(required) {
+    this.#select.setRequired(required);
   }
 
   clearOptions() {
@@ -179,6 +205,10 @@ class SelectUX {
   }
 
   #openDropdown() {
+    if (this.#disabled) {
+      return;
+    }
+
     this.#dropdown.style.display = '';
     this.#search.focus();
     this.#scrollBox.setScrollTop(0);
@@ -206,21 +236,30 @@ class SelectUX {
 }
 
 class SelectUXSelect {
+  #disabledClassName;
   #el;
   #placeholder;
   #values;
   #valueClassName;
+  #validation;
+  #disabled;
 
   constructor({
     className,
+    disabledClassName,
     placeholderClassName,
     placeholder,
     valuesClassName,
     valueClassName,
+    required,
+    disabled,
   }) {
+    this.#disabledClassName = disabledClassName;
+
     this.#el = document.createElement('div');
     this.#el.className = className;
     this.#el.tabIndex = 0;
+    this.#el.style.setProperty('position', 'relative', 'important');
 
     this.#el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -238,6 +277,27 @@ class SelectUXSelect {
       }
     });
 
+    this.#el.addEventListener('focus', (e) => {
+      if (this.#disabled) {
+        this.#el.blur();
+      }
+    });
+
+    this.#validation = document.createElement('input');
+    this.#validation.type = 'text';
+    this.#validation.required = required;
+    this.#validation.style.setProperty('position', 'absolute', 'important');
+    this.#validation.style.setProperty('top', '0', 'important');
+    this.#validation.style.setProperty('left', '0', 'important');
+    this.#validation.style.setProperty('right', '0', 'important');
+    this.#validation.style.setProperty('bottom', '0', 'important');
+    this.#validation.style.setProperty('opacity', '0', 'important');
+    this.#validation.style.setProperty('z-index', '-1', 'important');
+    this.#validation.setCustomValidity('Please select an item in the list.');
+    this.#validation.tabIndex = -1;
+
+    this.#el.appendChild(this.#validation);
+
     this.#placeholder = document.createElement('div');
     this.#placeholder.className = placeholderClassName;
     this.#placeholder.textContent = placeholder;
@@ -250,6 +310,23 @@ class SelectUXSelect {
     this.#el.appendChild(this.#values);
 
     this.#valueClassName = valueClassName;
+
+    this.setDisabled(disabled);
+  }
+
+  setDisabled(disabled) {
+    this.#disabled = disabled;
+    this.#el.classList.toggle(this.#disabledClassName, disabled);
+
+    this.#el.tabIndex = disabled ? -1 : 1;
+
+    this.#values.querySelectorAll('button').forEach((button) => {
+      button.disabled = disabled;
+    });
+  }
+
+  setRequired(required) {
+    this.#validation.required = required;
   }
 
   getEl() {
@@ -268,6 +345,8 @@ class SelectUXSelect {
     selectUXOptions.forEach((selectUXOption) => {
       this.#addValue(selectUXOption);
     });
+
+    this.#validation.value = selectUXOptions.length ? '1' : '';
   }
 
   #addValue(selectUXOption) {
@@ -276,18 +355,27 @@ class SelectUXSelect {
     value.title = 'Remove option';
     value.className = this.#valueClassName;
     value.textContent = selectUXOption.getLabel();
+    value.disabled = this.#disabled;
 
-    value.addEventListener('click', function (e) {
+    value.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
+
+      if (this.#disabled) {
+        return;
+      }
 
       selectUXOption.setChecked(false);
     });
 
-    value.addEventListener('keydown', function (e) {
+    value.addEventListener('keydown', (e) => {
       if ('Space' === e.code || 'Enter' === e.code) {
         e.stopPropagation();
         e.preventDefault();
+
+        if (this.#disabled) {
+          return;
+        }
 
         selectUXOption.setChecked(false);
       }
@@ -358,7 +446,6 @@ class SelectUXScrollBox {
   #selectId;
   #selectName;
   #selectMultiple;
-  #selectRequired;
 
   constructor({
     htmlSelectElement,
@@ -375,7 +462,6 @@ class SelectUXScrollBox {
     this.#selectId = htmlSelectElement.id;
     this.#selectName = htmlSelectElement.name;
     this.#selectMultiple = htmlSelectElement.multiple;
-    this.#selectRequired = htmlSelectElement.required;
 
     this.#el = document.createElement('div');
     this.#el.className = className;
@@ -475,6 +561,22 @@ class SelectUXScrollBox {
     return checked;
   }
 
+  getValue() {
+    const checked = this.getChecked();
+
+    if (this.#selectMultiple) {
+      const value = [];
+
+      checked.forEach((selectUXOption) => {
+        value.push(selectUXOption.getValue());
+      });
+
+      return value;
+    } else {
+      return checked.length ? checked[0].getValue() : '';
+    }
+  }
+
   setValue(value) {
     this.#selectUXOptions.forEach(function (selectUXOption) {
       selectUXOption.setChecked(selectUXOption.isValue(value));
@@ -562,7 +664,6 @@ class SelectUXScrollBox {
       selectId: this.#selectId,
       selectName: this.#selectName,
       selectMultiple: this.#selectMultiple,
-      selectRequired: this.#selectRequired,
     });
 
     this.#el.appendChild(selectUXOption.getEl());
@@ -582,7 +683,6 @@ class SelectUXScrollBox {
       selectId: this.#selectId,
       selectName: this.#selectName,
       selectMultiple: this.#selectMultiple,
-      selectRequired: this.#selectRequired,
     });
 
     this.#el.appendChild(selectUXGroup.getEl());
@@ -606,7 +706,6 @@ class SelectUXOption {
     selectId,
     selectName,
     selectMultiple,
-    selectRequired,
   }) {
     if (!(option instanceof HTMLOptionElement)) {
       throw new Error('You must provide an <option> element.');
@@ -633,7 +732,6 @@ class SelectUXOption {
       this.#input.type = 'checkbox';
     } else {
       this.#input.type = 'radio';
-      this.#input.required = selectRequired;
     }
 
     this.#input.addEventListener('change', () => {
@@ -681,6 +779,10 @@ class SelectUXOption {
       : value === this.#input.value;
   }
 
+  getValue() {
+    return this.#input.value;
+  }
+
   getLabel() {
     return this.#label.textContent;
   }
@@ -723,7 +825,6 @@ class SelectUXGroup {
   #selectId;
   #selectName;
   #selectMultiple;
-  #selectRequired;
 
   constructor({
     optgroup,
@@ -736,7 +837,6 @@ class SelectUXGroup {
     selectId,
     selectName,
     selectMultiple,
-    selectRequired,
   }) {
     if (!(optgroup instanceof HTMLOptGroupElement)) {
       throw new Error('You must provide an <optgroup> element.');
@@ -745,7 +845,6 @@ class SelectUXGroup {
     this.#selectId = selectId;
     this.#selectName = selectName;
     this.#selectMultiple = selectMultiple;
-    this.#selectRequired = selectRequired;
 
     this.#el = document.createElement('div');
     this.#el.className = className;
@@ -822,7 +921,6 @@ class SelectUXGroup {
       selectId: this.#selectId,
       selectName: this.#selectName,
       selectMultiple: this.#selectMultiple,
-      selectRequired: this.#selectRequired,
     });
 
     this.#el.appendChild(selectUXOption.getEl());
