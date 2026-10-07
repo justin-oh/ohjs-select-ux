@@ -232,6 +232,10 @@ class SelectUX {
   }
 }
 
+// NOTE: I tried to extend HTMLSelectElement
+// but I could not override the validity.
+// Also putting a disabled attribute on it didn't work as expected
+// so sticking with extending a regular DOM element.
 class SelectUXElement extends HTMLElement {
   static formAssociated = true;
 
