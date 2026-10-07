@@ -130,6 +130,18 @@ class SelectUX {
       this.#onSearchChange();
     });
 
+    this.#search.getEl().addEventListener('keydown', (e) => {
+      if (!e.shiftKey && 'Tab' === e.code) {
+        const visible = this.#scrollBox.getVisibleInputs();
+
+        if (visible.length > 0) {
+          e.preventDefault();
+
+          visible[0].focus();
+        }
+      }
+    });
+
     this.#el.addEventListener('select-ux:option:change', () => {
       this.#onInputChange();
 
@@ -402,11 +414,11 @@ class SelectUXSearch {
     this.#el.placeholder = placeholder;
 
     this.#el.addEventListener('input', () => {
-      this.#dispatchEvent();
+      this.#dispatchEvent('select-ux:search:change');
     });
 
     this.#el.addEventListener('change', () => {
-      this.#dispatchEvent();
+      this.#dispatchEvent('select-ux:search:change');
     });
   }
 
@@ -422,9 +434,10 @@ class SelectUXSearch {
     return this.#el.value;
   }
 
-  #dispatchEvent() {
-    const event = new Event('select-ux:search:change', {
+  #dispatchEvent(eventType, details) {
+    const event = new CustomEvent(eventType, {
       bubbles: true,
+      details: details,
     });
 
     this.#el.dispatchEvent(event);
@@ -489,34 +502,40 @@ class SelectUXScrollBox {
       }
     }
 
+    this.#el.addEventListener('keydown', (e) => {
+      if ('Tab' !== e.code) {
+        return;
+      }
+
+      if (!(e.target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if ('radio' !== e.target.type) {
+        return;
+      }
+
+      const visible = this.getVisibleInputs();
+
+      if (!visible.length) {
+        return;
+      }
+
+      if (e.shiftKey && visible[0] === e.target) {
+        return;
+      }
+
+      if (!e.shiftKey && visible[visible.length - 1] === e.target) {
+        return;
+      }
+
+      e.preventDefault();
+
+      this.#navigateOptions(e.target, e.shiftKey ? 'previous' : 'next', true);
+    });
+
     this.#el.addEventListener('select-ux:option:navigate', (e) => {
-      const inputs = this.#el.querySelectorAll('input');
-
-      const visible = [];
-
-      inputs.forEach((input) => {
-        if (input.checkVisibility()) {
-          visible.push(input);
-        }
-      });
-
-      if ('next' === e.detail.direction) {
-        visible.reverse();
-      }
-
-      let previous = null;
-
-      for (let i = 0; i < visible.length; i++) {
-        if (visible[i] === e.detail.input) {
-          break;
-        }
-
-        previous = visible[i];
-      }
-
-      if (previous) {
-        previous.focus();
-      }
+      this.#navigateOptions(e.detail.input, e.detail.direction, false);
     });
   }
 
@@ -540,6 +559,20 @@ class SelectUXScrollBox {
     });
 
     this.#emptyMessage.style.display = anyVisible ? 'none' : '';
+  }
+
+  getVisibleInputs() {
+    const inputs = this.#el.querySelectorAll('input');
+
+    const visible = [];
+
+    inputs.forEach((input) => {
+      if (input.checkVisibility()) {
+        visible.push(input);
+      }
+    });
+
+    return visible;
   }
 
   getChecked() {
@@ -654,6 +687,28 @@ class SelectUXScrollBox {
     });
   }
 
+  #navigateOptions(input, direction, tabbing) {
+    const visible = this.getVisibleInputs();
+
+    if ('next' === direction) {
+      visible.reverse();
+    }
+
+    let previous = null;
+
+    for (let i = 0; i < visible.length; i++) {
+      if (visible[i] === input) {
+        break;
+      }
+
+      previous = visible[i];
+    }
+
+    if (previous) {
+      previous.focus();
+    }
+  }
+
   #addOption(option) {
     const selectUXOption = new SelectUXOption({
       option: option,
@@ -741,9 +796,7 @@ class SelectUXOption {
       const isArrowUp = 'ArrowUp' === e.code;
       const isArrowDown = 'ArrowDown' === e.code;
 
-      // NOTE: default behaviour for up/down in an array of radios
-      // is to simultaneously navigate and select
-      if (selectMultiple && (isArrowUp || isArrowDown)) {
+      if (isArrowUp || isArrowDown) {
         e.preventDefault();
         e.stopImmediatePropagation();
 
