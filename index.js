@@ -9,7 +9,6 @@ class SelectUX {
   constructor({
     htmlSelectElement,
     className = 'select-ux',
-    selectDisabledClassName = 'select-ux__select--disabled',
     selectPlaceholderClassName = 'select-ux__select__placeholder',
     selectPlaceholder = 'Choose an option',
     selectValuesClassName = 'select-ux__select__values',
@@ -50,7 +49,6 @@ class SelectUX {
 
     this.#select = new SelectUXSelect({
       htmlSelectElement: htmlSelectElement,
-      disabledClassName: selectDisabledClassName,
       placeholderClassName: selectPlaceholderClassName,
       placeholder: selectPlaceholder,
       valuesClassName: selectValuesClassName,
@@ -234,8 +232,7 @@ class SelectUX {
 
 // NOTE: I tried to extend HTMLSelectElement
 // but I could not override the validity.
-// Also putting a disabled attribute on it didn't work as expected
-// so sticking with extending a regular DOM element.
+// Also doing el.disabled = true didn't work as expected.
 class SelectUXElement extends HTMLElement {
   static formAssociated = true;
 
@@ -248,7 +245,6 @@ class SelectUXElement extends HTMLElement {
 window.customElements.define('select-ux', SelectUXElement);
 
 class SelectUXSelect {
-  #disabledClassName;
   #el;
   #placeholder;
   #values;
@@ -258,14 +254,11 @@ class SelectUXSelect {
 
   constructor({
     htmlSelectElement,
-    disabledClassName,
     placeholderClassName,
     placeholder,
     valuesClassName,
     valueClassName,
   }) {
-    this.#disabledClassName = disabledClassName;
-
     this.#el = document.createElement('select-ux');
     this.#el.className = htmlSelectElement.className;
     this.#el.tabIndex = 0;
@@ -312,8 +305,8 @@ class SelectUXSelect {
 
   setDisabled(disabled) {
     this.#disabled = disabled;
-    this.#el.classList.toggle(this.#disabledClassName, disabled);
 
+    this.#el.toggleAttribute('disabled', disabled);
     this.#el.tabIndex = disabled ? -1 : 1;
 
     this.#values.querySelectorAll('button').forEach((button) => {

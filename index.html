@@ -10,7 +10,7 @@
       <form>
         <div class="mb-3">
           <label for="select_single" class="form-label">Select Single</label>
-          <select name="select_single" id="select_single" class="form-select" required>
+          <select name="select_single" id="select_single" class="form-select" required disabled>
             <option value="one">One</option>
             <option value="two">Two</option>
             <option value="three" selected>Three</option>
@@ -92,10 +92,6 @@
           }
         }
 
-        .select-ux__select--disabled {
-          background-color: var(--bs-secondary-bg);
-        }
-
         .select-ux__scroll-box {
           max-height: 10rem;
           overflow-y: scroll;
@@ -121,7 +117,6 @@
     <script src="index.js"></script>
     <script>
       const options = {
-        selectClassName: 'select-ux__select form-select',
         dropdownClassName: 'select-ux__dropdown form-control',
         searchClassName: 'select-ux__search form-control mb-2',
         selectValueClassName: 'select-ux__value btn btn-xs btn-secondary',
