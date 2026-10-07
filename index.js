@@ -741,7 +741,7 @@ class SelectUXOption {
       const isArrowUp = 'ArrowUp' === e.code;
       const isArrowDown = 'ArrowDown' === e.code;
 
-      if (!selectMultiple && (isArrowUp || isArrowDown)) {
+      if (selectMultiple && (isArrowUp || isArrowDown)) {
         e.preventDefault();
         e.stopImmediatePropagation();
 
