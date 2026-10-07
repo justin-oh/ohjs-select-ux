@@ -10,7 +10,7 @@
       <form>
         <div class="mb-3">
           <label for="select_single" class="form-label">Select Single</label>
-          <select name="select_single" id="select_single" class="form-select" required disabled>
+          <select name="select_single" id="select_single" class="form-select" required>
             <option value="one">One</option>
             <option value="two">Two</option>
             <option value="three" selected>Three</option>
@@ -82,6 +82,49 @@
 
     <style>
       .select-ux {
+        .select-ux__select__values {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+          align-items: center;
+
+          .select-ux__value {
+            /* @extend .btn;
+            @extend .btn-secondary; */
+            --bs-btn-padding-y: 0;
+            --bs-btn-padding-x: 0.25rem;
+            --bs-btn-font-size: 0.875rem;
+            --bs-btn-border-radius: calc(var(--bs-border-radius-sm)/2);
+            /* matches the line height of normal text */
+            height: 1.5rem;
+          }
+        }
+
+        .select-ux__scroll-box {
+          max-height: 10rem;
+          padding-left: 0.25rem;
+
+          .select-ux__dropdown {
+            /* @extend .form-control; */
+          }
+
+          .select-ux__search {
+            /* @extend .form-control; */
+          }
+        }
+
+        .select-ux__option {
+          /* @extend .form-check; */
+
+          .select-ux__option__input {
+            /* @extend .form-check-input; */
+          }
+
+          .select-ux__option__label {
+            /* @extend .form-check-label; */
+          }
+        }
+
         .select-ux__group {
           .select-ux__group__heading {
             font-weight: bold;
@@ -91,26 +134,6 @@
             margin-left: 1rem;
           }
         }
-
-        .select-ux__scroll-box {
-          max-height: 10rem;
-          overflow-y: scroll;
-        }
-
-        .select-ux__select__values {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-          align-items: center;
-        }
-      }
-
-      .btn-xs {
-        --bs-btn-padding-y: 0;
-        --bs-btn-padding-x: 0.25rem;
-        --bs-btn-font-size: 0.875rem;
-        --bs-btn-border-radius: calc(var(--bs-border-radius-sm)/2);
-        height: 1.5rem;
       }
     </style>
 
@@ -119,7 +142,7 @@
       const options = {
         dropdownClassName: 'select-ux__dropdown form-control',
         searchClassName: 'select-ux__search form-control mb-2',
-        selectValueClassName: 'select-ux__value btn btn-xs btn-secondary',
+        selectValueClassName: 'select-ux__value btn btn-secondary',
         optionClassName: 'select-ux__option form-check',
         optionInputClassName: 'select-ux__option__input form-check-input',
         optionLabelClassName: 'select-ux__option__label form-check-label',

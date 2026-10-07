@@ -482,6 +482,7 @@ class SelectUXScrollBox {
 
     this.#el = document.createElement('div');
     this.#el.className = className;
+    this.#el.style.setProperty('overflow-y', 'scroll', 'important');
 
     this.#emptyMessage = document.createElement('div');
     this.#emptyMessage.className = emptyMessageClassName;
