@@ -43,7 +43,6 @@ class SelectUX {
     this.#disabled = htmlSelectElement.disabled;
 
     this.#el = document.createElement('div');
-    this.#el.id = htmlSelectElement.id;
     this.#el.className = className;
     this.#el.style.setProperty('position', 'relative', 'important');
 
@@ -260,6 +259,7 @@ class SelectUXSelect {
     valueClassName,
   }) {
     this.#el = document.createElement('select-ux');
+    this.#el.id = htmlSelectElement.id;
     this.#el.className = htmlSelectElement.className;
     this.#el.tabIndex = 0;
     this.#el.style.setProperty('position', 'relative', 'important');
