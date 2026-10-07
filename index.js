@@ -741,6 +741,8 @@ class SelectUXOption {
       const isArrowUp = 'ArrowUp' === e.code;
       const isArrowDown = 'ArrowDown' === e.code;
 
+      // NOTE: default behaviour for up/down in an array of radios
+      // is to simultaneously navigate and select
       if (selectMultiple && (isArrowUp || isArrowDown)) {
         e.preventDefault();
         e.stopImmediatePropagation();
