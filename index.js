@@ -307,7 +307,7 @@ class SelectUXSelect {
     this.#disabled = disabled;
 
     this.#el.toggleAttribute('disabled', disabled);
-    this.#el.tabIndex = disabled ? -1 : 1;
+    this.#el.tabIndex = disabled ? -1 : 0;
 
     this.#values.querySelectorAll('button').forEach((button) => {
       button.disabled = disabled;
