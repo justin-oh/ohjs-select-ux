@@ -278,6 +278,7 @@ class SelectUXSelect {
     this.#el.className = htmlSelectElement.className;
     this.#el.tabIndex = 0;
     this.#el.style.setProperty('position', 'relative', 'important');
+    this.#el.ariaLabel = `You are on a custom ${htmlSelectElement.multiple ? 'multiple' : 'single'} select element. To open the dropdown, press the UP arrow, DOWN arrow, or SPACE. If there are any selected options, you can press TAB to move through them now.`;
 
     this.#el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -364,6 +365,7 @@ class SelectUXSelect {
     value.className = this.#valueClassName;
     value.innerHTML = '<i class="bi bi-x"></i> ' + textContent;
     value.disabled = this.#disabled;
+    value.ariaLabel = `${textContent}. Press SPACE or ENTER to remove this selection.`;
 
     value.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -419,6 +421,8 @@ class SelectUXSearch {
     this.#el.type = 'search';
     this.#el.className = className;
     this.#el.placeholder = placeholder;
+    this.#el.ariaLabel =
+      'You are on a search element within the dropdown of the custom select element. You may begin typing to filter the available options. Press TAB to move to the options.';
 
     this.#el.addEventListener('input', () => {
       this.#dispatchEvent('select-ux:search:change');
@@ -490,6 +494,9 @@ class SelectUXScrollBox {
     this.#emptyMessage.className = emptyMessageClassName;
     this.#emptyMessage.textContent = emptyMessage;
     this.#emptyMessage.style.display = 'none';
+    this.#emptyMessage.tabIndex = 0;
+    this.#emptyMessage.ariaLabel =
+      'There are no options available. Press SHIFT+TAB to return to the search element. Press TAB to continue down the page.';
 
     this.#el.appendChild(this.#emptyMessage);
 
@@ -763,6 +770,7 @@ class SelectUXOption {
   #el;
   #input;
   #label;
+  #prefix;
 
   static #count = 0;
 
@@ -774,23 +782,19 @@ class SelectUXOption {
     selectId,
     selectName,
     selectMultiple,
+    prefix = '',
   }) {
     if (!(option instanceof HTMLOptionElement)) {
       throw new Error('You must provide an <option> element.');
     }
 
+    this.#prefix = prefix;
+
     this.#el = document.createElement('div');
     this.#el.className = className;
 
-    let ariaLabel = option.textContent;
-
-    if (option.parentNode instanceof HTMLOptGroupElement) {
-      ariaLabel = `${option.parentNode.label}: ${ariaLabel}`;
-    }
-
     this.#input = document.createElement('input');
     this.#input.id = selectId + '_' + SelectUXOption.#count++;
-    this.#input.ariaLabel = ariaLabel;
     this.#input.value = option.value;
     this.#input.name = selectName;
     this.#input.checked = option.selected;
@@ -839,6 +843,8 @@ class SelectUXOption {
 
     this.#el.appendChild(this.#input);
     this.#el.appendChild(this.#label);
+
+    this.#input.ariaLabel = `${this.getLabel()}. , Press SPACE or ENTER to toggle the option. Press the UP or DOWN arrow to move to a different option. Press ESCAPE to close the dropdown and focus the custom select element. You may also press SHIFT+TAB or TAB to move to a different option but these actions will eventually take you out of the options.`;
   }
 
   getEl() {
@@ -856,7 +862,9 @@ class SelectUXOption {
   }
 
   getLabel() {
-    return this.#label.textContent;
+    return this.#prefix
+      ? `${this.#prefix}: ${this.#label.textContent}`
+      : this.#label.textContent;
   }
 
   getChecked() {
@@ -993,6 +1001,7 @@ class SelectUXGroup {
       selectId: this.#selectId,
       selectName: this.#selectName,
       selectMultiple: this.#selectMultiple,
+      prefix: this.#heading.textContent,
     });
 
     this.#el.appendChild(selectUXOption.getEl());
