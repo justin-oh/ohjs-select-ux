@@ -356,11 +356,13 @@ class SelectUXSelect {
   }
 
   #addValue(selectUXOption) {
+    const textContent = selectUXOption.getLabel();
+
     const value = document.createElement('button');
     value.type = 'button';
     value.title = 'Remove option';
     value.className = this.#valueClassName;
-    value.textContent = selectUXOption.getLabel();
+    value.innerHTML = '<i class="bi bi-x"></i> ' + textContent;
     value.disabled = this.#disabled;
 
     value.addEventListener('click', (e) => {
