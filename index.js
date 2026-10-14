@@ -371,16 +371,29 @@ class SelectUXSelect {
   }
 
   #addValue(selectUXOption) {
-    const labelNoPrefix = selectUXOption.getLabel(false);
+    const prefix = selectUXOption.getPrefix();
+    const label = selectUXOption.getLabel();
+
+    let textContent = label;
+
+    if (prefix) {
+      textContent = `${prefix}: ${label}`;
+    }
+
+    let ariaLabel = label;
+
+    if (prefix) {
+      ariaLabel += ` from group ${prefix}`;
+    }
 
     const value = document.createElement('button');
     value.type = 'button';
     value.title = 'Remove option';
     value.className = this.#valueClassName;
-    value.innerHTML = `<i class="bi bi-x"></i> ${selectUXOption.getLabel(true)}`;
+    value.innerHTML = `<i class="bi bi-x"></i> ${textContent}`;
     value.disabled = this.#disabled;
-    value.ariaLabel = `${labelNoPrefix}. Press SPACE or ENTER to remove this selection.`;
-    value.dataset.label = labelNoPrefix;
+    value.ariaLabel = `${ariaLabel}. Press SPACE or ENTER to remove this selection.`;
+    value.dataset.ariaLabel = ariaLabel;
 
     value.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -420,7 +433,7 @@ class SelectUXSelect {
   }
 
   #updateAriaLabel() {
-    this.#el.ariaLabel = `You are on a custom ${this.#multiple ? 'multiple' : 'single'} select element. To open the dropdown, press the UP arrow, DOWN arrow, or SPACE.`;
+    this.#el.ariaLabel = `You are on a custom ${this.#multiple ? 'multiple' : 'single'} select element.`;
 
     const buttons = this.#values.querySelectorAll('button');
 
@@ -428,7 +441,7 @@ class SelectUXSelect {
       const selections = [];
 
       buttons.forEach((button) => {
-        selections.push(button.dataset.label);
+        selections.push(button.dataset.ariaLabel);
       });
 
       if (1 === selections.length) {
@@ -439,6 +452,9 @@ class SelectUXSelect {
     } else {
       this.#el.ariaLabel += ' There are no current selections.';
     }
+
+    this.#el.ariaLabel +=
+      ' To open the dropdown, press the UP arrow, DOWN arrow, or SPACE.';
   }
 
   #dispatchEvent(eventType) {
@@ -933,10 +949,12 @@ class SelectUXOption {
     return this.#input.value;
   }
 
-  getLabel(includePrefix) {
-    return includePrefix && this.#prefix
-      ? `${this.#prefix}: ${this.#label.textContent}`
-      : this.#label.textContent;
+  getPrefix() {
+    return this.#prefix;
+  }
+
+  getLabel() {
+    return this.#label.textContent;
   }
 
   getChecked() {
