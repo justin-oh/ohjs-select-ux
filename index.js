@@ -269,6 +269,7 @@ class SelectUXSelect {
   #placeholder;
   #values;
   #valueClassName;
+  #multiple;
   #required;
   #disabled;
 
@@ -279,12 +280,13 @@ class SelectUXSelect {
     valuesClassName,
     valueClassName,
   }) {
+    this.#multiple = htmlSelectElement.multiple;
+
     this.#el = document.createElement('select-ux');
     this.#el.id = htmlSelectElement.id;
     this.#el.className = htmlSelectElement.className;
     this.#el.tabIndex = 0;
     this.#el.style.setProperty('position', 'relative', 'important');
-    this.#el.ariaLabel = `You are on a custom ${htmlSelectElement.multiple ? 'multiple' : 'single'} select element. To open the dropdown, press the UP arrow, DOWN arrow, or SPACE. If there are any current selections, you can press TAB to move through them now.`;
 
     this.#el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -326,6 +328,8 @@ class SelectUXSelect {
 
     this.setRequired(htmlSelectElement.required);
     this.setDisabled(htmlSelectElement.disabled);
+
+    this.#updateAriaLabel();
   }
 
   setDisabled(disabled) {
@@ -362,18 +366,21 @@ class SelectUXSelect {
     });
 
     this.#setValidity();
+
+    this.#updateAriaLabel();
   }
 
   #addValue(selectUXOption) {
-    const textContent = selectUXOption.getLabel();
+    const labelNoPrefix = selectUXOption.getLabel(false);
 
     const value = document.createElement('button');
     value.type = 'button';
     value.title = 'Remove option';
     value.className = this.#valueClassName;
-    value.innerHTML = '<i class="bi bi-x"></i> ' + textContent;
+    value.innerHTML = `<i class="bi bi-x"></i> ${selectUXOption.getLabel(true)}`;
     value.disabled = this.#disabled;
-    value.ariaLabel = `${textContent}. Press SPACE or ENTER to remove this selection.`;
+    value.ariaLabel = `${labelNoPrefix}. Press SPACE or ENTER to remove this selection.`;
+    value.dataset.label = labelNoPrefix;
 
     value.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -410,6 +417,28 @@ class SelectUXSelect {
       { valueMissing: valueMissing },
       'Please select an item in the list.',
     );
+  }
+
+  #updateAriaLabel() {
+    this.#el.ariaLabel = `You are on a custom ${this.#multiple ? 'multiple' : 'single'} select element. To open the dropdown, press the UP arrow, DOWN arrow, or SPACE.`;
+
+    const buttons = this.#values.querySelectorAll('button');
+
+    if (buttons.length) {
+      const selections = [];
+
+      buttons.forEach((button) => {
+        selections.push(button.dataset.label);
+      });
+
+      if (1 === selections.length) {
+        this.#el.ariaLabel += ` The current selection is ${selections[0]}. Press TAB to move to the current selection.`;
+      } else {
+        this.#el.ariaLabel += ` The current selections are: ${selections.join(', ')}. Press TAB to move to the current selections.`;
+      }
+    } else {
+      this.#el.ariaLabel += ' There are no current selections.';
+    }
   }
 
   #dispatchEvent(eventType) {
@@ -904,8 +933,8 @@ class SelectUXOption {
     return this.#input.value;
   }
 
-  getLabel() {
-    return this.#prefix
+  getLabel(includePrefix) {
+    return includePrefix && this.#prefix
       ? `${this.#prefix}: ${this.#label.textContent}`
       : this.#label.textContent;
   }
@@ -931,14 +960,20 @@ class SelectUXOption {
   }
 
   #updateAriaLabel() {
-    const end =
-      'Press the UP or DOWN arrow to move to a different option. Press ESCAPE to close the dropdown and focus the custom select element. You may also press SHIFT+TAB or TAB to move to a different option but these actions will eventually take you out of the available options.';
+    this.#input.ariaLabel = `${this.#label.textContent}.`;
 
-    const start = this.#input.checked
-      ? `${this.getLabel()}. , Press SPACE or ENTER to deselect this option.`
-      : `${this.getLabel()}. , Press SPACE or ENTER to select this option.`;
+    if (this.#prefix) {
+      this.#input.ariaLabel += `, Group ${this.#prefix}.`;
+    }
 
-    this.#input.ariaLabel = `${start} ${end}`;
+    if (this.#input.checked) {
+      this.#input.ariaLabel += ' Press SPACE or ENTER to deselect this option.';
+    } else {
+      this.#input.ariaLabel += ' Press SPACE or ENTER to select this option.';
+    }
+
+    this.#input.ariaLabel +=
+      ' Press the UP or DOWN arrow to move to a different option. Press ESCAPE to close the dropdown and focus the custom select element. You may also press SHIFT+TAB or TAB to move to a different option but these actions will eventually take you out of the available options.';
   }
 
   #dispatchEvent(eventType, detail = {}) {
