@@ -130,6 +130,12 @@ class SelectUX {
       this.#onSearchChange();
     });
 
+    this.#el.addEventListener('select-ux:scroll-box:filter', (e) => {
+      const numOptions = e.detail.numOptions;
+
+      this.#search.setNumOptions(numOptions);
+    });
+
     this.#search.getEl().addEventListener('keydown', (e) => {
       if (!e.shiftKey && 'Tab' === e.code) {
         // This overrides the default behaviour of tabbing into an array
@@ -278,7 +284,7 @@ class SelectUXSelect {
     this.#el.className = htmlSelectElement.className;
     this.#el.tabIndex = 0;
     this.#el.style.setProperty('position', 'relative', 'important');
-    this.#el.ariaLabel = `You are on a custom ${htmlSelectElement.multiple ? 'multiple' : 'single'} select element. To open the dropdown, press the UP arrow, DOWN arrow, or SPACE. If there are any selected options, you can press TAB to move through them now.`;
+    this.#el.ariaLabel = `You are on a custom ${htmlSelectElement.multiple ? 'multiple' : 'single'} select element. To open the dropdown, press the UP arrow, DOWN arrow, or SPACE. If there are any current selections, you can press TAB to move through them now.`;
 
     this.#el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -311,6 +317,8 @@ class SelectUXSelect {
 
     this.#values = document.createElement('div');
     this.#values.className = valuesClassName;
+    this.#values.ariaLabel =
+      'Press SHIFT+TAB or TAB to move through the selections.';
 
     this.#el.appendChild(this.#values);
 
@@ -421,8 +429,6 @@ class SelectUXSearch {
     this.#el.type = 'search';
     this.#el.className = className;
     this.#el.placeholder = placeholder;
-    this.#el.ariaLabel =
-      'You are on a search element within the dropdown of the custom select element. You may begin typing to filter the available options. Press TAB to move to the options.';
 
     this.#el.addEventListener('input', () => {
       this.#dispatchEvent('select-ux:search:change');
@@ -431,6 +437,8 @@ class SelectUXSearch {
     this.#el.addEventListener('change', () => {
       this.#dispatchEvent('select-ux:search:change');
     });
+
+    this.#updateAriaLabel(null);
   }
 
   getEl() {
@@ -443,6 +451,23 @@ class SelectUXSearch {
 
   getValue() {
     return this.#el.value;
+  }
+
+  setNumOptions(numOptions) {
+    this.#updateAriaLabel(numOptions);
+  }
+
+  #updateAriaLabel(numOptions) {
+    this.#el.ariaLabel =
+      'You are on a search element within the custom select dropdown. You may type to filter the options. Press TAB to move to the options.';
+
+    if (0 === numOptions) {
+      this.#el.ariaLabel += ' There are no options available.';
+    } else if (1 === numOptions) {
+      this.#el.ariaLabel += ' There is one option available.';
+    } else if (null !== numOptions) {
+      this.#el.ariaLabel += ` There are ${numOptions} options available.`;
+    }
   }
 
   #dispatchEvent(eventType, details) {
@@ -569,17 +594,23 @@ class SelectUXScrollBox {
   }
 
   filter(value) {
-    let anyVisible = false;
+    let numOptions = 0;
 
     this.#selectUXOptions.forEach(function (selectUXOption) {
-      anyVisible |= selectUXOption.filter(value);
+      if (selectUXOption.filter(value)) {
+        numOptions++;
+      }
     });
 
     this.#selectUXGroups.forEach(function (selectUXGroup) {
-      anyVisible |= selectUXGroup.filter(value);
+      numOptions += selectUXGroup.filter(value);
     });
 
-    this.#emptyMessage.style.display = anyVisible ? 'none' : '';
+    this.#dispatchEvent('select-ux:scroll-box:filter', {
+      numOptions: numOptions,
+    });
+
+    this.#emptyMessage.style.display = numOptions > 0 ? 'none' : '';
   }
 
   getVisibleInputs() {
@@ -764,6 +795,15 @@ class SelectUXScrollBox {
 
     this.#selectUXGroups.push(selectUXGroup);
   }
+
+  #dispatchEvent(eventType, detail = {}) {
+    const event = new CustomEvent(eventType, {
+      bubbles: true,
+      detail: detail,
+    });
+
+    this.#el.dispatchEvent(event);
+  }
 }
 
 class SelectUXOption {
@@ -807,6 +847,8 @@ class SelectUXOption {
     }
 
     this.#input.addEventListener('change', () => {
+      this.#updateAriaLabel();
+
       this.#dispatchEvent('select-ux:option:change');
     });
 
@@ -827,8 +869,9 @@ class SelectUXOption {
         });
       } else if ('Escape' === e.code) {
         this.#dispatchEvent('select-ux:option:escape');
-      } else if ('Enter' === e.code) {
+      } else if ('Enter' === e.code || 'Space' === e.code) {
         // This overrides the default behaviour of submitting the form.
+        // For radios, this overrides the default behaviour of SPACE
         e.preventDefault();
         e.stopImmediatePropagation();
 
@@ -844,7 +887,7 @@ class SelectUXOption {
     this.#el.appendChild(this.#input);
     this.#el.appendChild(this.#label);
 
-    this.#input.ariaLabel = `${this.getLabel()}. , Press SPACE or ENTER to toggle the option. Press the UP or DOWN arrow to move to a different option. Press ESCAPE to close the dropdown and focus the custom select element. You may also press SHIFT+TAB or TAB to move to a different option but these actions will eventually take you out of the options.`;
+    this.#updateAriaLabel();
   }
 
   getEl() {
@@ -874,6 +917,8 @@ class SelectUXOption {
   setChecked(checked) {
     this.#input.checked = checked;
 
+    this.#updateAriaLabel();
+
     this.#dispatchEvent('select-ux:option:change');
   }
 
@@ -883,6 +928,17 @@ class SelectUXOption {
     this.#el.style.display = show ? '' : 'none';
 
     return show;
+  }
+
+  #updateAriaLabel() {
+    const end =
+      'Press the UP or DOWN arrow to move to a different option. Press ESCAPE to close the dropdown and focus the custom select element. You may also press SHIFT+TAB or TAB to move to a different option but these actions will eventually take you out of the available options.';
+
+    const start = this.#input.checked
+      ? `${this.getLabel()}. , Press SPACE or ENTER to deselect this option.`
+      : `${this.getLabel()}. , Press SPACE or ENTER to select this option.`;
+
+    this.#input.ariaLabel = `${start} ${end}`;
   }
 
   #dispatchEvent(eventType, detail = {}) {
@@ -973,15 +1029,17 @@ class SelectUXGroup {
   }
 
   filter(value) {
-    let anyVisible = false;
+    let numOptions = false;
 
     this.#selectUXOptions.forEach(function (selectUXOption) {
-      anyVisible |= selectUXOption.filter(value);
+      if (selectUXOption.filter(value)) {
+        numOptions++;
+      }
     });
 
-    this.#el.style.display = anyVisible ? '' : 'none';
+    this.#el.style.display = numOptions > 0 ? '' : 'none';
 
-    return anyVisible;
+    return numOptions;
   }
 
   clearOptions() {
