@@ -38,6 +38,7 @@
             </optgroup>
           </select>
         </div>
+      <button id="is_valid">Is valid</button>
         <div class="mb-3">
           <label for="select_multiple" class="form-label">Select Multiple</label>
           <select name="select_multiple[]" id="select_multiple" class="form-select" required multiple>
@@ -152,6 +153,14 @@
       options.htmlSelectElement = document.getElementById('select_single');
 
       const selectUXSingle = new SelectUX(options);
+
+      const isValid = document.getElementById('is_valid');
+
+      isValid.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        console.log(selectUXSingle.reportValidity());
+      });
 
       options.htmlSelectElement = document.getElementById('select_multiple');
 

@@ -211,6 +211,10 @@ class SelectUX {
     this.#onInputChange();
   }
 
+  reportValidity() {
+    return this.#select.reportValidity();
+  }
+
   #toggleDropdown() {
     if (this.#dropdown.checkVisibility()) {
       this.#closeDropdown(true);
@@ -368,6 +372,10 @@ class SelectUXSelect {
     this.#setValidity();
 
     this.#updateAriaLabel();
+  }
+
+  reportValidity() {
+    return this.#el.internals_.reportValidity();
   }
 
   #addValue(selectUXOption) {
