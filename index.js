@@ -5,6 +5,7 @@ class SelectUX {
   #search;
   #scrollBox;
   #disabled;
+  #multiple;
 
   constructor({
     htmlSelectElement,
@@ -41,6 +42,8 @@ class SelectUX {
     }
 
     this.#disabled = htmlSelectElement.disabled;
+
+    this.#multiple = htmlSelectElement.multiple;
 
     this.#el = document.createElement('div');
     this.#el.className = className;
@@ -93,37 +96,42 @@ class SelectUX {
     htmlSelectElement.remove();
 
     this.#el.addEventListener('click', (e) => {
-      // prevents click events from bubbling to the document
+      // prevents click events in this element from bubbling to the document
       e.stopPropagation();
     });
 
-    document.addEventListener('click', () => {
+    document.addEventListener('click', (e) => {
       // clicking anywhere outside of the SelectUX DOM
       // will close the dropdown
-      this.#closeDropdown(false);
+      this.closeDropdown(false);
+    });
+
+    this.#el.addEventListener('focusin', (e) => {
+      // prevents focusin events in this element from bubbling to the document
+      e.stopPropagation();
     });
 
     document.addEventListener('focusin', (e) => {
       if (!this.#el.contains(e.target)) {
-        // something received focus outside of the SelectUX
-        this.#closeDropdown(false);
+        // something received focus outside of this SelectUX
+        this.closeDropdown(false);
       }
     });
 
     this.#el.addEventListener('select-ux:select:toggle', () => {
-      this.#toggleDropdown();
+      this.toggleDropdown();
     });
 
     this.#el.addEventListener('select-ux:select:open', () => {
-      this.#openDropdown();
+      this.openDropdown();
     });
 
     this.#el.addEventListener('select-ux:select:close', () => {
-      this.#closeDropdown(true);
+      this.closeDropdown(true);
     });
 
     this.#el.addEventListener('select-ux:option:escape', () => {
-      this.#closeDropdown(true);
+      this.closeDropdown(true);
     });
 
     this.#el.addEventListener('select-ux:search:change', () => {
@@ -153,6 +161,10 @@ class SelectUX {
 
     this.#el.addEventListener('select-ux:option:change', () => {
       this.#onInputChange();
+
+      if (!this.#multiple) {
+        this.closeDropdown();
+      }
 
       this.#el.dispatchEvent(new Event('select-ux:change'));
     });
@@ -215,15 +227,15 @@ class SelectUX {
     return this.#select.reportValidity();
   }
 
-  #toggleDropdown() {
+  toggleDropdown() {
     if (this.#dropdown.checkVisibility()) {
-      this.#closeDropdown(true);
+      this.closeDropdown(true);
     } else {
-      this.#openDropdown();
+      this.openDropdown();
     }
   }
 
-  #openDropdown() {
+  openDropdown() {
     if (this.#disabled) {
       return;
     }
@@ -233,7 +245,7 @@ class SelectUX {
     this.#scrollBox.setScrollTop(0);
   }
 
-  #closeDropdown(focus) {
+  closeDropdown(focus) {
     this.#dropdown.style.display = 'none';
 
     if (focus) {
