@@ -317,6 +317,7 @@ class SelectUXSelect {
 
         this.#dispatchEvent('select-ux:select:open');
       } else if ('Escape' === e.code) {
+        e.stopPropagation();
         this.#dispatchEvent('select-ux:select:close');
       }
     });
@@ -501,6 +502,12 @@ class SelectUXSearch {
 
     this.#el.addEventListener('change', () => {
       this.#dispatchEvent('select-ux:search:change');
+    });
+
+    this.#el.addEventListener('keydown', (e) => {
+      if ('Escape' === e.code) {
+        e.stopPropagation();
+      }
     });
 
     this.#updateAriaLabel(null);
@@ -933,6 +940,7 @@ class SelectUXOption {
           direction: isArrowUp ? 'previous' : 'next',
         });
       } else if ('Escape' === e.code) {
+        e.stopImmediatePropagation();
         this.#dispatchEvent('select-ux:option:escape');
       } else if ('Enter' === e.code || 'Space' === e.code) {
         // This overrides the default behaviour of submitting the form.
